@@ -4,15 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"github.com/mobypolo/ya-41go/internal/customerrors"
+	"github.com/mobypolo/ya-41go/internal/repositories"
 
 	"github.com/mobypolo/ya-41go/internal/storage"
 )
 
 type MetricService struct {
-	store storage.Storage // интерфейс, а не реализация
+	store repositories.MetricsRepository
 }
 
-func NewMetricService(store storage.Storage) *MetricService {
+func NewMetricService(store repositories.MetricsRepository) *MetricService {
 	return &MetricService{store: store}
 }
 

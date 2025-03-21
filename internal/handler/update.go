@@ -7,6 +7,7 @@ import (
 	"github.com/mobypolo/ya-41go/internal/helpers"
 	"github.com/mobypolo/ya-41go/internal/middleware"
 	"github.com/mobypolo/ya-41go/internal/route"
+	"github.com/mobypolo/ya-41go/internal/service"
 	"github.com/mobypolo/ya-41go/internal/storage"
 	"log"
 	"net/http"
@@ -14,41 +15,45 @@ import (
 
 import _ "github.com/mobypolo/ya-41go/internal/metrics"
 
-var (
-	memStore = storage.NewMemStorage()
-)
-
 func init() {
-	var h http.Handler = http.HandlerFunc(updateHandler)
+	metricService := service.NewMetricService(storage.NewMemStorage())
+	route.Register("/update/", MakeUpdateHandler(metricService))
+}
+
+func MakeUpdateHandler(service *service.MetricService) http.Handler {
+	var h http.Handler = UpdateHandler(service)
 
 	h = middleware.RequirePathParts(4, h)
 	h = middleware.AllowOnlyPost(h)
 
-	route.Register("/update/", h)
+	return h
 }
 
-func updateHandler(w http.ResponseWriter, r *http.Request) {
-	parts := helpers.SplitStrToChunks(r.URL.Path)
+func UpdateHandler(service *service.MetricService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 
-	metricType, metricName, metricValue := parts[1], parts[2], parts[3]
+		parts := helpers.SplitStrToChunks(r.URL.Path)
 
-	if err := memStore.UpdateMetric(metricType, metricName, metricValue); err != nil {
-		switch {
-		case errors.Is(err, customerrors.ErrUnsupportedType):
-			http.Error(w, err.Error(), http.StatusNotImplemented)
-		case errors.Is(err, customerrors.ErrUnknownGaugeName):
-		case errors.Is(err, customerrors.ErrUnknownCounterName):
-		case errors.Is(err, customerrors.ErrInvalidValue):
-			http.Error(w, err.Error(), http.StatusBadRequest)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		metricType, metricName, metricValue := parts[1], parts[2], parts[3]
+
+		if err := service.Update(metricType, metricName, metricValue); err != nil {
+			switch {
+			case errors.Is(err, customerrors.ErrUnsupportedType):
+				http.Error(w, err.Error(), http.StatusNotImplemented)
+			case errors.Is(err, customerrors.ErrUnknownGaugeName):
+			case errors.Is(err, customerrors.ErrUnknownCounterName):
+			case errors.Is(err, customerrors.ErrInvalidValue):
+				http.Error(w, err.Error(), http.StatusBadRequest)
+			default:
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+			return
 		}
-		return
-	}
 
-	w.WriteHeader(http.StatusOK)
-	_, err := fmt.Fprintf(w, "Metric %s/%s updated with value %s\n", metricType, metricName, metricValue)
-	if err != nil {
-		log.Println(customerrors.ErrNotFound)
+		w.WriteHeader(http.StatusOK)
+		_, err := fmt.Fprintf(w, "Metric %s/%s updated with value %s\n", metricType, metricName, metricValue)
+		if err != nil {
+			log.Println(customerrors.ErrNotFound)
+		}
 	}
 }

@@ -2,12 +2,13 @@ package storage
 
 import (
 	"github.com/mobypolo/ya-41go/internal/customerrors"
+	"github.com/mobypolo/ya-41go/internal/repositories"
 )
 
 type MetricProcessor interface {
 	ValidateName(name string) error
 	ParseValue(value string) (any, error)
-	Update(storage Storage, name string, value any) error
+	Update(storage repositories.MetricsRepository, name string, value any) error
 }
 
 // Регистр
