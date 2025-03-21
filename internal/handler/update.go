@@ -21,8 +21,8 @@ var (
 func init() {
 	var h http.Handler = http.HandlerFunc(updateHandler)
 
-	h = middleware.RequirePathParts(3, h) // /{type}/{name}/{value} — 3 части
-	h = middleware.AllowOnlyPost(h)       // только POST
+	h = middleware.RequirePathParts(4, h)
+	h = middleware.AllowOnlyPost(h)
 
 	route.Register("/update/", h)
 }

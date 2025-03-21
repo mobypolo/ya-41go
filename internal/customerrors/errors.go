@@ -17,3 +17,4 @@ var (
 )
 
 var ErrNotFound = errors.New("err Not Found")
+var ErrNotEnoughParts = errors.New("not enough path parts")

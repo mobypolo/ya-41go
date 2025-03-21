@@ -8,9 +8,11 @@ type CounterMetric string
 const (
 	GaugeTemperature GaugeMetric = "temperature"
 	GaugeLoad        GaugeMetric = "load"
+	GaugeTest        GaugeMetric = "testGauge"
 
 	CounterRequests CounterMetric = "requests"
 	CounterErrors   CounterMetric = "errors"
+	CounterTest     CounterMetric = "testCounter"
 )
 
 func (g GaugeMetric) String() string {
@@ -26,6 +28,8 @@ func ParseGaugeMetric(s string) (GaugeMetric, error) {
 		return GaugeTemperature, nil
 	case GaugeLoad.String():
 		return GaugeLoad, nil
+	case GaugeTest.String():
+		return GaugeTest, nil
 	default:
 		return "", customerrors.ErrUnknownGaugeName
 	}
@@ -37,6 +41,8 @@ func ParseCounterMetric(s string) (CounterMetric, error) {
 		return CounterRequests, nil
 	case CounterErrors.String():
 		return CounterErrors, nil
+	case CounterTest.String():
+		return CounterTest, nil
 	default:
 		return "", customerrors.ErrUnknownCounterName
 	}

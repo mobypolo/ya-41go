@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"github.com/mobypolo/ya-41go/internal/customerrors"
 	"github.com/mobypolo/ya-41go/internal/helpers"
 	"net/http"
 )
@@ -10,7 +11,7 @@ func RequirePathParts(minParts int, next http.Handler) http.Handler {
 		parts := helpers.SplitStrToChunks(r.URL.Path)
 
 		if len(parts) < minParts {
-			http.Error(w, "not enough path parts", http.StatusNotFound)
+			http.Error(w, customerrors.ErrNotEnoughParts.Error(), http.StatusInternalServerError)
 			return
 		}
 		next.ServeHTTP(w, r)
