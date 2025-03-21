@@ -30,7 +30,7 @@ func (s *MetricService) Update(metricType, name, value string) error {
 
 	parsedValue, err := processor.ParseValue(value)
 	if err != nil {
-		allErrs = append(allErrs, fmt.Errorf("invalid value: %w", err))
+		allErrs = append(allErrs, customerrors.ErrInvalidValue)
 	}
 
 	if len(allErrs) > 0 {

@@ -35,14 +35,12 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 	if err := memStore.UpdateMetric(metricType, metricName, metricValue); err != nil {
 		switch {
 		case errors.Is(err, customerrors.ErrUnsupportedType):
-			w.WriteHeader(http.StatusNotFound)
 			http.Error(w, err.Error(), http.StatusNotImplemented)
 		case errors.Is(err, customerrors.ErrUnknownGaugeName):
 		case errors.Is(err, customerrors.ErrUnknownCounterName):
-			w.WriteHeader(http.StatusBadRequest)
+		case errors.Is(err, customerrors.ErrInvalidValue):
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		default:
-			w.WriteHeader(http.StatusInternalServerError)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		return

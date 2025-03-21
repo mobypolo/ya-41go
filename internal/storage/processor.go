@@ -20,7 +20,7 @@ func RegisterProcessor(metricType string, processor MetricProcessor) {
 func GetProcessor(metricType string) (MetricProcessor, error) {
 	p, ok := processors[metricType]
 	if !ok {
-		return nil, customerrors.ErrUnknownMetricType
+		return nil, customerrors.ErrUnsupportedType
 	}
 	return p, nil
 }

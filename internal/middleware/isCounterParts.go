@@ -11,7 +11,7 @@ func RequirePathParts(minParts int, next http.Handler) http.Handler {
 		parts := helpers.SplitStrToChunks(r.URL.Path)
 
 		if len(parts) < minParts {
-			http.Error(w, customerrors.ErrNotEnoughParts.Error(), http.StatusInternalServerError)
+			http.Error(w, customerrors.ErrNotEnoughParts.Error(), http.StatusNotFound)
 			return
 		}
 		next.ServeHTTP(w, r)
