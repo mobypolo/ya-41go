@@ -3,7 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
-	"github.com/mobypolo/ya-41go/internal/customErrors"
+	"github.com/mobypolo/ya-41go/internal/customerrors"
 
 	"github.com/mobypolo/ya-41go/internal/storage"
 )
@@ -63,7 +63,7 @@ func (s *MetricService) Get(metricType, name string) (string, error) {
 		return fmt.Sprintf("%d", val), nil
 
 	default:
-		return "", customErrors.ErrUnsupportedType
+		return "", customerrors.ErrUnsupportedType
 	}
 }
 

@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"github.com/mobypolo/ya-41go/internal/customErrors"
+	"github.com/mobypolo/ya-41go/internal/customerrors"
 	"sync"
 )
 
@@ -42,7 +42,7 @@ func (s *MemStorage) UpdateMetric(metricType, name, value string) error {
 	}
 	parsedValue, err := processor.ParseValue(value)
 	if err != nil {
-		return customErrors.ErrInvalidValue
+		return customerrors.ErrInvalidValue
 	}
 	return processor.Update(s, name, parsedValue)
 }
@@ -66,7 +66,7 @@ func (s *MemStorage) GetGauge(name string) (float64, error) {
 	defer s.mu.RUnlock()
 	val, ok := s.Gauges[name]
 	if !ok {
-		return 0, customErrors.ErrNotFound
+		return 0, customerrors.ErrNotFound
 	}
 	return val, nil
 }
@@ -76,7 +76,7 @@ func (s *MemStorage) GetCounter(name string) (int64, error) {
 	defer s.mu.RUnlock()
 	val, ok := s.Counters[name]
 	if !ok {
-		return 0, customErrors.ErrNotFound
+		return 0, customerrors.ErrNotFound
 	}
 	return val, nil
 }

@@ -1,4 +1,4 @@
-package customErrors
+package customerrors
 
 import "errors"
 
@@ -14,7 +14,6 @@ var (
 
 var (
 	ErrUnknownMetricType = errors.New("unknown metric type")
-	ErrUnknownMetricName = errors.New("unknown metric name")
 )
 
 var ErrNotFound = errors.New("err Not Found")

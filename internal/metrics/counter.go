@@ -1,7 +1,7 @@
 package metrics
 
 import (
-	"github.com/mobypolo/ya-41go/internal/customErrors"
+	"github.com/mobypolo/ya-41go/internal/customerrors"
 	"strconv"
 
 	"github.com/mobypolo/ya-41go/internal/storage"
@@ -21,7 +21,7 @@ func (c counterProcessor) ParseValue(value string) (any, error) {
 func (c counterProcessor) Update(s storage.Storage, name string, value any) error {
 	v, ok := value.(int64)
 	if !ok {
-		return customErrors.ErrInvalidValue
+		return customerrors.ErrInvalidValue
 	}
 	return s.UpdateCounter(name, v)
 }

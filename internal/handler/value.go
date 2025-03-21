@@ -3,10 +3,11 @@ package handler
 import (
 	"errors"
 	"fmt"
-	"github.com/mobypolo/ya-41go/internal/customErrors"
+	"github.com/mobypolo/ya-41go/internal/customerrors"
 	"github.com/mobypolo/ya-41go/internal/helpers"
 	"github.com/mobypolo/ya-41go/internal/route"
 	"github.com/mobypolo/ya-41go/internal/service"
+	"log"
 	"net/http"
 )
 
@@ -27,9 +28,9 @@ func valueHandler(w http.ResponseWriter, r *http.Request) {
 	val, err := metricService.Get(metricType, metricName)
 	if err != nil {
 		switch {
-		case errors.Is(err, customErrors.ErrNotFound):
+		case errors.Is(err, customerrors.ErrNotFound):
 			http.Error(w, "metric not found", http.StatusNotFound)
-		case errors.Is(err, customErrors.ErrUnsupportedType):
+		case errors.Is(err, customerrors.ErrUnsupportedType):
 			http.Error(w, err.Error(), http.StatusNotImplemented)
 		default:
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -38,5 +39,8 @@ func valueHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, val)
+	_, err = fmt.Fprint(w, val)
+	if err != nil {
+		log.Println(customerrors.ErrNotFound)
+	}
 }

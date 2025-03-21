@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"github.com/mobypolo/ya-41go/internal/customErrors"
+	"github.com/mobypolo/ya-41go/internal/customerrors"
 )
 
 type MetricProcessor interface {
@@ -20,7 +20,7 @@ func RegisterProcessor(metricType string, processor MetricProcessor) {
 func GetProcessor(metricType string) (MetricProcessor, error) {
 	p, ok := processors[metricType]
 	if !ok {
-		return nil, customErrors.ErrUnknownMetricType
+		return nil, customerrors.ErrUnknownMetricType
 	}
 	return p, nil
 }

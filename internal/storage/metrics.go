@@ -1,6 +1,6 @@
 package storage
 
-import "github.com/mobypolo/ya-41go/internal/customErrors"
+import "github.com/mobypolo/ya-41go/internal/customerrors"
 
 type GaugeMetric string
 type CounterMetric string
@@ -27,7 +27,7 @@ func ParseGaugeMetric(s string) (GaugeMetric, error) {
 	case GaugeLoad.String():
 		return GaugeLoad, nil
 	default:
-		return "", customErrors.ErrUnknownGaugeName
+		return "", customerrors.ErrUnknownGaugeName
 	}
 }
 
@@ -38,6 +38,6 @@ func ParseCounterMetric(s string) (CounterMetric, error) {
 	case CounterErrors.String():
 		return CounterErrors, nil
 	default:
-		return "", customErrors.ErrUnknownCounterName
+		return "", customerrors.ErrUnknownCounterName
 	}
 }

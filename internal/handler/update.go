@@ -3,20 +3,18 @@ package handler
 import (
 	"errors"
 	"fmt"
-	"github.com/mobypolo/ya-41go/internal/customErrors"
+	"github.com/mobypolo/ya-41go/internal/customerrors"
 	"github.com/mobypolo/ya-41go/internal/helpers"
 	"github.com/mobypolo/ya-41go/internal/middleware"
 	"github.com/mobypolo/ya-41go/internal/route"
 	"github.com/mobypolo/ya-41go/internal/storage"
+	"log"
 	"net/http"
 )
 
 import _ "github.com/mobypolo/ya-41go/internal/metrics"
 
 var (
-	allowedGaugeMetrics   = map[string]struct{}{"temperature": {}, "load": {}}
-	allowedCounterMetrics = map[string]struct{}{"requests": {}, "errors": {}}
-
 	memStore = storage.NewMemStorage()
 )
 
@@ -36,11 +34,11 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := memStore.UpdateMetric(metricType, metricName, metricValue); err != nil {
 		switch {
-		case errors.Is(err, customErrors.ErrUnsupportedType):
+		case errors.Is(err, customerrors.ErrUnsupportedType):
 			w.WriteHeader(http.StatusNotFound)
 			http.Error(w, err.Error(), http.StatusNotImplemented)
-		case errors.Is(err, customErrors.ErrUnknownGaugeName):
-		case errors.Is(err, customErrors.ErrUnknownCounterName):
+		case errors.Is(err, customerrors.ErrUnknownGaugeName):
+		case errors.Is(err, customerrors.ErrUnknownCounterName):
 			w.WriteHeader(http.StatusBadRequest)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		default:
@@ -51,5 +49,8 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Metric %s/%s updated with value %s\n", metricType, metricName, metricValue)
+	_, err := fmt.Fprintf(w, "Metric %s/%s updated with value %s\n", metricType, metricName, metricValue)
+	if err != nil {
+		log.Println(customerrors.ErrNotFound)
+	}
 }
