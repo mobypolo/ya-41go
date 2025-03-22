@@ -4,13 +4,10 @@ import (
 	"fmt"
 	"github.com/mobypolo/ya-41go/internal/agent"
 	"github.com/mobypolo/ya-41go/internal/agent/sources"
-	"io"
 	"log"
 	"net/http"
 	"time"
 )
-
-import _ "github.com/mobypolo/ya-41go/internal/agent/sources"
 
 var (
 	serverAddress  = "http://localhost:8080"
@@ -68,12 +65,11 @@ func sendMetric(m agent.Metric) {
 		log.Println("request error:", err)
 		return
 	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			log.Println("close body error:", err)
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("error closing response body: %v", err)
 		}
-	}(resp.Body)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("server responded with %s for %s", resp.Status, url)

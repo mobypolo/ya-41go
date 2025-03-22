@@ -37,9 +37,5 @@ var AllowedGaugeMetrics = []string{
 }
 
 func AllGaugeMetricNames() []string {
-	keys := make([]string, 0, len(AllowedGaugeMetrics))
-	for i := range AllowedGaugeMetrics {
-		keys = append(keys, AllowedGaugeMetrics[i])
-	}
-	return keys
+	return append([]string{}, AllowedGaugeMetrics...)
 }
