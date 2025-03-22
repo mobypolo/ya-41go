@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/mobypolo/ya-41go/internal/router"
+	"github.com/mobypolo/ya-41go/internal/server/router"
 	"log"
 	"net/http"
 )
