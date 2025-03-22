@@ -12,9 +12,5 @@ var (
 	ErrUnknownCounterName = errors.New("unknown counter metric name")
 )
 
-var (
-	ErrUnknownMetricType = errors.New("unknown metric type")
-)
-
 var ErrNotFound = errors.New("err Not Found")
 var ErrNotEnoughParts = errors.New("not enough path parts")
