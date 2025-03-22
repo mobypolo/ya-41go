@@ -42,7 +42,7 @@ func ValueHandler(service *service.MetricService) http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		_, err = fmt.Fprint(w, fmt.Sprintf("%s\n", val))
+		_, err = fmt.Fprintf(w, "%s\n", val)
 		if err != nil {
 			log.Println(customerrors.ErrNotFound)
 		}

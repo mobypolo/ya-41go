@@ -10,8 +10,8 @@ var AllowedCounterMetrics = []string{
 
 func AllCounterMetricNames() []string {
 	keys := make([]string, 0, len(AllowedCounterMetrics))
-	for _, item := range AllowedCounterMetrics {
-		keys = append(keys, item)
+	for i := range AllowedCounterMetrics {
+		keys = append(keys, AllowedCounterMetrics[i])
 	}
 	return keys
 }
