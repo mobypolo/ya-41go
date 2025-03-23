@@ -38,6 +38,10 @@ func (m *mockRepo) GetCounter(_ string) (int64, error) {
 	return m.counterValue, m.getCounterErr
 }
 
+func (m *mockRepo) GetAllCounters() map[string]string {
+	return map[string]string{}
+}
+
 func TestMetricService_UpdateGauge_OK(t *testing.T) {
 	repo := &mockRepo{}
 	svc := service.NewMetricService(repo)

@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"fmt"
 	"github.com/mobypolo/ya-41go/internal/server/customerrors"
 	"sync"
 )
@@ -17,6 +18,7 @@ type Storage interface {
 	UpdateCounter(name string, delta int64) error
 	GetGauge(string) (float64, error)
 	GetCounter(string) (int64, error)
+	GetAllCounters() map[string]string
 }
 
 type MemStorage struct {
@@ -79,4 +81,20 @@ func (s *MemStorage) GetCounter(name string) (int64, error) {
 		return 0, customerrors.ErrNotFound
 	}
 	return val, nil
+}
+
+func (s *MemStorage) GetAllCounters() map[string]string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	metrics := map[string]string{}
+
+	for name, item := range s.Counters {
+		metrics[name] = fmt.Sprintf("%d", item)
+	}
+	for name, item := range s.Gauges {
+		metrics[name] = fmt.Sprintf("%f", item)
+	}
+
+	return metrics
 }

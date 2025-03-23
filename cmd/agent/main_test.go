@@ -58,5 +58,4 @@ func TestSendMetric_ServerError(t *testing.T) {
 	}
 
 	sendMetric(m)
-	// Просто проверим, что не паникует, остальное уже в логах
 }

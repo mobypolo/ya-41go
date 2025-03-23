@@ -34,6 +34,10 @@ func (m *mockStore) UpdateCounter(_ string, _ int64) error {
 	return nil
 }
 
+func (m *mockStore) GetAllCounters() map[string]string {
+	return map[string]string{}
+}
+
 func TestValueHandler_OK(t *testing.T) {
 	s := &mockStore{
 		GetGaugeFunc: func(name string) (float64, error) {

@@ -15,7 +15,7 @@ import (
 import _ "github.com/mobypolo/ya-41go/internal/server/metrics"
 
 func init() {
-	route.Register("/update/", MakeUpdateHandler(service.GetMetricService()))
+	route.Register("/update/*", http.MethodPost, MakeUpdateHandler(service.GetMetricService()))
 }
 
 func MakeUpdateHandler(service *service.MetricService) http.Handler {

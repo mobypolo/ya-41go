@@ -12,7 +12,7 @@ import (
 )
 
 func init() {
-	route.Register("/value/", MakeValueHandler(service.GetMetricService()))
+	route.Register("/value/*", http.MethodGet, MakeValueHandler(service.GetMetricService()))
 }
 
 func MakeValueHandler(service *service.MetricService) http.Handler {

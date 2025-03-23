@@ -6,18 +6,22 @@ import (
 	"github.com/mobypolo/ya-41go/internal/server/customerrors"
 	"github.com/mobypolo/ya-41go/internal/server/repositories"
 	"github.com/mobypolo/ya-41go/internal/server/storage"
+	"sync"
 )
 
-var metricService MetricService
+var (
+	metricService *MetricService
+	once          sync.Once
+)
 
 func GetMetricService() *MetricService {
-	if metricService.store == nil {
-		setMetricService(*NewMetricService(storage.NewMemStorage()))
-	}
-	return &metricService
+	once.Do(func() {
+		setMetricService(NewMetricService(storage.NewMemStorage()))
+	})
+	return metricService
 }
 
-func setMetricService(service MetricService) {
+func setMetricService(service *MetricService) {
 	metricService = service
 }
 
@@ -78,6 +82,10 @@ func (s *MetricService) Get(metricType, name string) (string, error) {
 	default:
 		return "", customerrors.ErrUnsupportedType
 	}
+}
+
+func (s *MetricService) GetAvailableMetrics() map[string]string {
+	return s.store.GetAllCounters()
 }
 
 func (s *MetricService) validateGaugeName(name string) error {

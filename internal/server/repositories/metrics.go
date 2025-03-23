@@ -5,4 +5,5 @@ type MetricsRepository interface {
 	UpdateCounter(name string, delta int64) error
 	GetGauge(name string) (float64, error)
 	GetCounter(name string) (int64, error)
+	GetAllCounters() map[string]string
 }
