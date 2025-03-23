@@ -6,6 +6,8 @@ var AllowedCounterMetrics = []string{
 	"testCounter",
 
 	"PollCount",
+
+	"testSetGet*",
 }
 
 func AllCounterMetricNames() []string {
