@@ -17,5 +17,4 @@ func ErrorHandler(err error, w http.ResponseWriter) {
 	default:
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-	return
 }
