@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"errors"
 	"fmt"
 	"github.com/mobypolo/ya-41go/internal/server/customerrors"
 	"github.com/mobypolo/ya-41go/internal/server/helpers"
@@ -30,14 +29,7 @@ func ValueHandler(service *service.MetricService) http.HandlerFunc {
 
 		val, err := service.Get(metricType, metricName)
 		if err != nil {
-			switch {
-			case errors.Is(err, customerrors.ErrNotFound):
-				http.Error(w, "metric not found", http.StatusNotFound)
-			case errors.Is(err, customerrors.ErrUnsupportedType):
-				http.Error(w, err.Error(), http.StatusNotImplemented)
-			default:
-				http.Error(w, err.Error(), http.StatusBadRequest)
-			}
+			customerrors.ErrorHandler(err, w)
 			return
 		}
 

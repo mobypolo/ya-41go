@@ -67,7 +67,7 @@ func (s *MetricService) Get(metricType, name string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return fmt.Sprintf("%f", val), nil
+		return fmt.Sprintf("%.3f", val), nil
 
 	case storage.CounterType:
 		if err := s.validateCounterName(name); err != nil {
