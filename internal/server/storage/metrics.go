@@ -17,7 +17,7 @@ func (c CounterMetric) String() string {
 }
 
 func ParseGaugeMetric(s string) (string, error) {
-	exist := utils.ExistInArray(metrictslist.AllGaugeMetricNames(), s)
+	exist := utils.ExistInArrayWithWildCard(metrictslist.AllGaugeMetricNames(), s)
 	if exist {
 		return s, nil
 	}
@@ -25,7 +25,7 @@ func ParseGaugeMetric(s string) (string, error) {
 }
 
 func ParseCounterMetric(s string) (string, error) {
-	exist := utils.ExistInArray(metrictslist.AllCounterMetricNames(), s)
+	exist := utils.ExistInArrayWithWildCard(metrictslist.AllCounterMetricNames(), s)
 	if exist {
 		return s, nil
 	}

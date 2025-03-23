@@ -40,6 +40,7 @@ func UpdateHandler(service *service.MetricService) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusNotImplemented)
 			case errors.Is(err, customerrors.ErrUnknownGaugeName):
 			case errors.Is(err, customerrors.ErrUnknownCounterName):
+				http.Error(w, err.Error(), http.StatusNotFound)
 			case errors.Is(err, customerrors.ErrInvalidValue):
 				http.Error(w, err.Error(), http.StatusBadRequest)
 			default:

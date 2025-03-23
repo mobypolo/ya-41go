@@ -34,6 +34,8 @@ var AllowedGaugeMetrics = []string{
 	"TotalAlloc",
 
 	"RandomValue",
+
+	"testSetGet*",
 }
 
 func AllGaugeMetricNames() []string {
