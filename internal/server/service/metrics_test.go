@@ -75,7 +75,7 @@ func TestMetricService_GetGauge_OK(t *testing.T) {
 
 	val, err := svc.Get("gauge", "temperature")
 	assert.NoError(t, err)
-	assert.Equal(t, "42.500000", val)
+	assert.Equal(t, "42.500", val)
 }
 
 func TestMetricService_GetGauge_NotFound(t *testing.T) {
