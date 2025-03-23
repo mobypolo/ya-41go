@@ -38,7 +38,6 @@ func UpdateHandler(service *service.MetricService) http.HandlerFunc {
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
 		_, err := fmt.Fprintf(w, "Metric %s/%s updated with value %s\n", metricType, metricName, metricValue)
 		if err != nil {
 			log.Println(customerrors.ErrNotFound)
