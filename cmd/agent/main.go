@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/mobypolo/ya-41go/cmd"
 	"github.com/mobypolo/ya-41go/internal/agent"
 	"github.com/mobypolo/ya-41go/internal/agent/sources"
 	"log"
@@ -9,13 +10,8 @@ import (
 	"time"
 )
 
-var (
-	serverAddress  = "http://localhost:8080"
-	pollInterval   = 2 * time.Second
-	reportInterval = 10 * time.Second
-)
-
 func main() {
+	cmd.ParseFlags("agent")
 	metricsChan := make(chan []agent.Metric, 1)
 
 	go func() {
@@ -24,12 +20,12 @@ func main() {
 			if err == nil {
 				metricsChan <- metrics
 			}
-			time.Sleep(pollInterval)
+			time.Sleep(cmd.PollInterval)
 		}
 	}()
 
 	go func() {
-		ticker := time.NewTicker(reportInterval)
+		ticker := time.NewTicker(cmd.ReportInterval)
 		defer ticker.Stop()
 
 		for range ticker.C {
@@ -52,6 +48,8 @@ func main() {
 }
 
 func sendMetric(m agent.Metric) {
+	serverAddress := fmt.Sprintf("http://%s", cmd.ServerAddress)
+
 	url := fmt.Sprintf("%s/update/%s/%s/%v", serverAddress, m.Type, m.Name, m.Value)
 	req, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
