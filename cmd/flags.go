@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -32,6 +33,7 @@ func ParseFlags(app string) {
 	default:
 		_, err := fmt.Fprintf(os.Stderr, "Unknown app type: %s\n", app)
 		if err != nil {
+			log.Println(err)
 		}
 		os.Exit(1)
 	}
@@ -41,6 +43,7 @@ func ParseFlags(app string) {
 	if len(pflag.Args()) > 0 {
 		_, err := fmt.Fprintf(os.Stderr, "Unknown flags: %v\n", pflag.Args())
 		if err != nil {
+			log.Println(err)
 		}
 		os.Exit(1)
 	}
