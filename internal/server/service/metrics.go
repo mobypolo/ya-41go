@@ -6,6 +6,7 @@ import (
 	"github.com/mobypolo/ya-41go/internal/server/customerrors"
 	"github.com/mobypolo/ya-41go/internal/server/repositories"
 	"github.com/mobypolo/ya-41go/internal/server/storage"
+	"strconv"
 	"sync"
 )
 
@@ -67,7 +68,7 @@ func (s *MetricService) Get(metricType, name string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return fmt.Sprintf("%.3f", val), nil
+		return strconv.FormatFloat(val, 'f', -1, 64), nil
 
 	case storage.CounterType:
 		if err := s.validateCounterName(name); err != nil {
