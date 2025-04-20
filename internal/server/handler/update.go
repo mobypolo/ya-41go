@@ -18,7 +18,7 @@ import _ "github.com/mobypolo/ya-41go/internal/server/metrics"
 
 func init() {
 	route.Register("/update/*", http.MethodPost, router.MakeRouteHandler(UpdateHandler(service.GetMetricService()), middleware.AllowOnlyPost, middleware.RequirePathParts(4)))
-	route.Register("/update", http.MethodPost, router.MakeRouteHandler(UpdateJSONHandler(service.GetMetricService()), middleware.AllowOnlyPost, middleware.SetJSONContentType))
+	route.Register("/update/", http.MethodPost, router.MakeRouteHandler(UpdateJSONHandler(service.GetMetricService()), middleware.AllowOnlyPost, middleware.SetJSONContentType))
 }
 
 func UpdateHandler(service *service.MetricService) http.HandlerFunc {

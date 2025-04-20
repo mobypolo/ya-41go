@@ -80,7 +80,7 @@ func sendMetric(m agent.Metric) {
 
 func sendMetricJSON(m agent.Metric) {
 	serverAddress := fmt.Sprintf("http://%s", cmd.ServerAddress)
-	url := fmt.Sprintf("%s/update", serverAddress)
+	url := fmt.Sprintf("%s/update/", serverAddress)
 
 	var payload dto.Metrics
 	payload.ID = m.Name
