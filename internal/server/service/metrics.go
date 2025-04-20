@@ -6,6 +6,7 @@ import (
 	"github.com/mobypolo/ya-41go/internal/server/customerrors"
 	"github.com/mobypolo/ya-41go/internal/server/repositories"
 	"github.com/mobypolo/ya-41go/internal/server/storage"
+	"github.com/mobypolo/ya-41go/internal/shared/dto"
 	"strconv"
 	"sync"
 )
@@ -97,4 +98,40 @@ func (s *MetricService) validateGaugeName(name string) error {
 func (s *MetricService) validateCounterName(name string) error {
 	_, err := storage.ParseCounterMetric(name)
 	return err
+}
+
+func (s *MetricService) UpdateFromDTO(m dto.Metrics) error {
+	switch m.MType {
+	case "gauge":
+		if m.Value == nil {
+			return customerrors.ErrInvalidValue
+		}
+		return s.store.UpdateGauge(m.ID, *m.Value)
+	case "counter":
+		if m.Delta == nil {
+			return customerrors.ErrInvalidValue
+		}
+		return s.store.UpdateCounter(m.ID, *m.Delta)
+	default:
+		return customerrors.ErrUnsupportedType
+	}
+}
+
+func (s *MetricService) GetAsDTO(mType, id string) (dto.Metrics, error) {
+	switch mType {
+	case "gauge":
+		val, err := s.store.GetGauge(id)
+		if err != nil {
+			return dto.Metrics{}, err
+		}
+		return dto.Metrics{ID: id, MType: mType, Value: &val}, nil
+	case "counter":
+		val, err := s.store.GetCounter(id)
+		if err != nil {
+			return dto.Metrics{}, err
+		}
+		return dto.Metrics{ID: id, MType: mType, Delta: &val}, nil
+	default:
+		return dto.Metrics{}, customerrors.ErrUnsupportedType
+	}
 }
