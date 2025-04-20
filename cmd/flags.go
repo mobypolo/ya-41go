@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/caarlos0/env/v11"
+	"github.com/mobypolo/ya-41go/internal/shared/logger"
 	"log"
 	"os"
 	"time"
@@ -10,10 +11,11 @@ import (
 	"github.com/spf13/pflag"
 )
 
-type config struct {
-	Address        string `env:"ADDRESS" envDefault:"localhost:8080"`
-	ReportInterval int    `env:"REPORT_INTERVAL" envDefault:"10"`
-	PollInterval   int    `env:"POLL_INTERVAL" envDefault:"2"`
+type Config struct {
+	Address        string            `env:"ADDRESS" envDefault:"localhost:8080"`
+	ReportInterval int               `env:"REPORT_INTERVAL" envDefault:"10"`
+	PollInterval   int               `env:"POLL_INTERVAL" envDefault:"2"`
+	ModeLogger     logger.ModeLogger `env:"LOG_MODE" envDefault:"dev"`
 }
 
 var (
@@ -22,8 +24,8 @@ var (
 	PollInterval   time.Duration
 )
 
-func ParseFlags(app string) {
-	var cfg config
+func ParseFlags(app string) Config {
+	var cfg Config
 
 	if err := env.Parse(&cfg); err != nil {
 		_, err := fmt.Fprintf(os.Stderr, "Failed to parse env: %v\n", err)
@@ -64,4 +66,6 @@ func ParseFlags(app string) {
 		}
 		os.Exit(1)
 	}
+
+	return cfg
 }
