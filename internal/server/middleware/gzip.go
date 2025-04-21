@@ -18,7 +18,7 @@ func GzipDecompressMiddleware(next http.Handler) http.Handler {
 			defer func(gz *gzip.Reader) {
 				err := gz.Close()
 				if err != nil {
-
+					http.Error(w, "failed to close gzip reader", http.StatusBadRequest)
 				}
 			}(gz)
 			r.Body = io.NopCloser(gz)
@@ -41,7 +41,7 @@ func GzipCompressMiddleware(next http.Handler) http.Handler {
 		defer func(gz *gzip.Writer) {
 			err := gz.Close()
 			if err != nil {
-
+				http.Error(w, "failed to close gzip reader", http.StatusBadRequest)
 			}
 		}(gz)
 
