@@ -15,8 +15,14 @@ import (
 )
 
 func init() {
-	route.Register("/value/*", http.MethodGet, router.MakeRouteHandler(ValueHandler(service.GetMetricService())))
-	route.Register("/value/", http.MethodPost, router.MakeRouteHandler(ValueJSONHandler(service.GetMetricService()), middleware.SetJSONContentType))
+	route.DeferRegister(func() {
+		s := service.GetMetricService()
+		if s == nil {
+			panic("metricService not set before route registration")
+		}
+		route.Register("/value/*", http.MethodGet, router.MakeRouteHandler(ValueHandler(service.GetMetricService())))
+		route.Register("/value/", http.MethodPost, router.MakeRouteHandler(ValueJSONHandler(service.GetMetricService()), middleware.SetJSONContentType))
+	})
 }
 
 func ValueHandler(service *service.MetricService) http.HandlerFunc {

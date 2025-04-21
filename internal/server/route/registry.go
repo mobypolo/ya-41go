@@ -9,16 +9,20 @@ type Route struct {
 }
 
 var routes []Route
+var deferredRoutes []func()
 
 func Register(path, method string, handler http.Handler) {
 	routes = append(routes, Route{Path: path, Method: method, Handler: handler})
 }
 
-func All() []Route {
-	return routes
+func DeferRegister(fn func()) {
+	deferredRoutes = append(deferredRoutes, fn)
 }
 
 func MountInto(mux interface{}) {
+	for _, fn := range deferredRoutes {
+		fn()
+	}
 	for _, r := range routes {
 		switch m := mux.(type) {
 		case interface {

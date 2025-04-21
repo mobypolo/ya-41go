@@ -8,22 +8,17 @@ import (
 	"github.com/mobypolo/ya-41go/internal/server/storage"
 	"github.com/mobypolo/ya-41go/internal/shared/dto"
 	"strconv"
-	"sync"
 )
 
 var (
 	metricService *MetricService
-	once          sync.Once
 )
 
 func GetMetricService() *MetricService {
-	once.Do(func() {
-		setMetricService(NewMetricService(storage.NewMemStorage()))
-	})
 	return metricService
 }
 
-func setMetricService(service *MetricService) {
+func SetMetricService(service *MetricService) {
 	metricService = service
 }
 

@@ -5,16 +5,28 @@ import (
 	"github.com/mobypolo/ya-41go/cmd"
 	"github.com/mobypolo/ya-41go/internal/server/middleware"
 	"github.com/mobypolo/ya-41go/internal/server/route"
+	"github.com/mobypolo/ya-41go/internal/server/service"
+	"github.com/mobypolo/ya-41go/internal/server/storage"
 	"github.com/mobypolo/ya-41go/internal/shared/logger"
 	"go.uber.org/zap"
 	"net/http"
+	"time"
 )
 
 import _ "github.com/mobypolo/ya-41go/internal/server/handler"
 
 func main() {
 	cfg := cmd.ParseFlags("server")
+	store := storage.NewPersistentStorage(
+		cfg.FileStoragePath,
+		time.Duration(cfg.StoreInterval)*time.Second,
+		cfg.RestoreOnStart,
+	)
+	defer store.Stop()
+	service.SetMetricService(service.NewMetricService(store))
+
 	logger.Init(cfg.ModeLogger)
+
 	r := chi.NewRouter()
 
 	r.Use(middleware.LoggingMiddleware)
