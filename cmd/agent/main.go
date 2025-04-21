@@ -1,11 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/mobypolo/ya-41go/cmd"
 	"github.com/mobypolo/ya-41go/internal/agent"
+	"github.com/mobypolo/ya-41go/internal/agent/helpers"
 	"github.com/mobypolo/ya-41go/internal/agent/sources"
 	"github.com/mobypolo/ya-41go/internal/shared/dto"
 	"log"
@@ -61,6 +61,8 @@ func sendMetric(m agent.Metric) {
 		return
 	}
 	req.Header.Set("Content-Type", "text/plain")
+	req.Header.Set("Content-Encoding", "gzip")
+	req.Header.Set("Accept-Encoding", "gzip")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -116,12 +118,20 @@ func sendMetricJSON(m agent.Metric) {
 		return
 	}
 
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(body))
+	compressedBody, err := helpers.CompressRequest(body)
+	if err != nil {
+		log.Println("compression error:", err)
+		return
+	}
+
+	req, err := http.NewRequest(http.MethodPost, url, compressedBody)
 	if err != nil {
 		log.Println("build request error:", err)
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Encoding", "gzip")
+	req.Header.Set("Accept-Encoding", "gzip")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

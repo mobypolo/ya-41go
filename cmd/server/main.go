@@ -18,6 +18,8 @@ func main() {
 	r := chi.NewRouter()
 
 	r.Use(middleware.LoggingMiddleware)
+	r.Use(middleware.GzipDecompressMiddleware)
+	r.Use(middleware.GzipCompressMiddleware)
 
 	route.MountInto(r)
 
