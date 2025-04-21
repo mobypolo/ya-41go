@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"github.com/mobypolo/ya-41go/internal/server/route"
+	"github.com/mobypolo/ya-41go/internal/server/router"
 	"github.com/mobypolo/ya-41go/internal/server/service"
 	"net/http"
 	"sort"
@@ -14,14 +15,8 @@ func init() {
 		if s == nil {
 			panic("metricService not set before route registration")
 		}
-		route.Register("/", http.MethodPost, MakeIndexHandler(service.GetMetricService()))
+		route.Register("/", http.MethodPost, router.MakeRouteHandler(IndexHandler(service.GetMetricService())))
 	})
-}
-
-func MakeIndexHandler(service *service.MetricService) http.Handler {
-	var h http.Handler = IndexHandler(service)
-
-	return h
 }
 
 func IndexHandler(service *service.MetricService) http.HandlerFunc {
