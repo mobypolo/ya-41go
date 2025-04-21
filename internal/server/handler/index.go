@@ -9,7 +9,13 @@ import (
 )
 
 func init() {
-	route.Register("/", http.MethodPost, MakeIndexHandler(service.GetMetricService()))
+	route.DeferRegister(func() {
+		s := service.GetMetricService()
+		if s == nil {
+			panic("metricService not set before route registration")
+		}
+		route.Register("/", http.MethodPost, MakeIndexHandler(service.GetMetricService()))
+	})
 }
 
 func MakeIndexHandler(service *service.MetricService) http.Handler {
