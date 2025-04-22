@@ -71,6 +71,10 @@ func (s *PersistentStorage) SaveToDisk() error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
+	return s.saveToDiskLocked()
+}
+
+func (s *PersistentStorage) saveToDiskLocked() error {
 	data := map[string]interface{}{
 		"gauges":   s.Gauges,
 		"counters": s.Counters,
@@ -116,23 +120,25 @@ func (s *PersistentStorage) LoadFromDisk() error {
 }
 
 func (s *PersistentStorage) UpdateGauge(name string, value float64) error {
-	err := s.MemStorage.UpdateGauge(name, value)
-	if err != nil {
-		return err
-	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.Gauges[name] = value
+
 	if s.storeInterval == 0 {
-		return s.SaveToDisk()
+		return s.saveToDiskLocked()
 	}
 	return nil
 }
 
 func (s *PersistentStorage) UpdateCounter(name string, delta int64) error {
-	err := s.MemStorage.UpdateCounter(name, delta)
-	if err != nil {
-		return err
-	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.Counters[name] += delta
+
 	if s.storeInterval == 0 {
-		return s.SaveToDisk()
+		return s.saveToDiskLocked()
 	}
 	return nil
 }
