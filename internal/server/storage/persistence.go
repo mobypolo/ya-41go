@@ -36,6 +36,10 @@ func NewPersistentStorage(filePath string, storeInterval time.Duration, restore 
 }
 
 func (s *PersistentStorage) startAutoSave() {
+	if s.storeInterval == 0 {
+		return
+	}
+
 	ticker := time.NewTicker(s.storeInterval)
 	defer ticker.Stop()
 	for {
@@ -108,5 +112,27 @@ func (s *PersistentStorage) LoadFromDisk() error {
 	defer s.mu.Unlock()
 	s.Gauges = data.Gauges
 	s.Counters = data.Counters
+	return nil
+}
+
+func (s *PersistentStorage) UpdateGauge(name string, value float64) error {
+	err := s.MemStorage.UpdateGauge(name, value)
+	if err != nil {
+		return err
+	}
+	if s.storeInterval == 0 {
+		return s.SaveToDisk()
+	}
+	return nil
+}
+
+func (s *PersistentStorage) UpdateCounter(name string, delta int64) error {
+	err := s.MemStorage.UpdateCounter(name, delta)
+	if err != nil {
+		return err
+	}
+	if s.storeInterval == 0 {
+		return s.SaveToDisk()
+	}
 	return nil
 }
