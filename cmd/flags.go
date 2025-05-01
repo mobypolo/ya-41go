@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/caarlos0/env/v11"
+	"github.com/mobypolo/ya-41go/internal/shared/logger"
 	"log"
 	"os"
 	"time"
@@ -10,10 +11,14 @@ import (
 	"github.com/spf13/pflag"
 )
 
-type config struct {
-	Address        string `env:"ADDRESS" envDefault:"localhost:8080"`
-	ReportInterval int    `env:"REPORT_INTERVAL" envDefault:"10"`
-	PollInterval   int    `env:"POLL_INTERVAL" envDefault:"2"`
+type Config struct {
+	Address         string            `env:"ADDRESS" envDefault:"localhost:8080"`
+	ReportInterval  int               `env:"REPORT_INTERVAL" envDefault:"10"`
+	PollInterval    int               `env:"POLL_INTERVAL" envDefault:"2"`
+	ModeLogger      logger.ModeLogger `env:"LOG_MODE" envDefault:"dev"`
+	StoreInterval   int               `env:"STORE_INTERVAL" envDefault:"300"`
+	FileStoragePath string            `env:"FILE_STORAGE_PATH" envDefault:"metrics.json"`
+	RestoreOnStart  bool              `env:"RESTORE" envDefault:"true"`
 }
 
 var (
@@ -22,8 +27,8 @@ var (
 	PollInterval   time.Duration
 )
 
-func ParseFlags(app string) {
-	var cfg config
+func ParseFlags(app string) Config {
+	var cfg Config
 
 	if err := env.Parse(&cfg); err != nil {
 		_, err := fmt.Fprintf(os.Stderr, "Failed to parse env: %v\n", err)
@@ -36,6 +41,9 @@ func ParseFlags(app string) {
 	switch app {
 	case "server":
 		pflag.StringVarP(&ServerAddress, "address", "a", cfg.Address, "HTTP server address")
+		pflag.IntVarP(&cfg.StoreInterval, "interval", "i", cfg.StoreInterval, "Store interval (seconds)")
+		pflag.StringVarP(&cfg.FileStoragePath, "file", "f", cfg.FileStoragePath, "File Storage Path")
+		pflag.BoolVarP(&cfg.RestoreOnStart, "restore", "r", cfg.RestoreOnStart, "Restore on load")
 
 	case "agent":
 		pflag.StringVarP(&ServerAddress, "address", "a", cfg.Address, "HTTP server address")
@@ -64,4 +72,6 @@ func ParseFlags(app string) {
 		}
 		os.Exit(1)
 	}
+
+	return cfg
 }

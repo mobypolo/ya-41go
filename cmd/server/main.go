@@ -3,20 +3,40 @@ package main
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/mobypolo/ya-41go/cmd"
+	"github.com/mobypolo/ya-41go/internal/server/middleware"
 	"github.com/mobypolo/ya-41go/internal/server/route"
-	"log"
+	"github.com/mobypolo/ya-41go/internal/server/service"
+	"github.com/mobypolo/ya-41go/internal/server/storage"
+	"github.com/mobypolo/ya-41go/internal/shared/logger"
+	"go.uber.org/zap"
 	"net/http"
+	"time"
 )
 
 import _ "github.com/mobypolo/ya-41go/internal/server/handler"
 
 func main() {
-	cmd.ParseFlags("server")
+	cfg := cmd.ParseFlags("server")
+	store := storage.NewPersistentStorage(
+		cfg.FileStoragePath,
+		time.Duration(cfg.StoreInterval)*time.Second,
+		cfg.RestoreOnStart,
+	)
+	defer store.Stop()
+	service.SetMetricService(service.NewMetricService(store))
+
+	logger.Init(cfg.ModeLogger)
+
 	r := chi.NewRouter()
+
+	r.Use(middleware.LoggingMiddleware)
+	r.Use(middleware.GzipDecompressMiddleware)
+	r.Use(middleware.GzipCompressMiddleware)
+
 	route.MountInto(r)
 
-	log.Printf("Server started on %s\n", cmd.ServerAddress)
+	logger.L().Info("Server started", zap.String("addr", cmd.ServerAddress))
 	if err := http.ListenAndServe(cmd.ServerAddress, r); err != nil {
-		log.Fatalf("could not start server: %v\n", err)
+		logger.L().Fatal("server error", zap.Error(err))
 	}
 }
