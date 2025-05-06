@@ -9,6 +9,7 @@ var AllowedCounterMetrics = []string{
 
 	"testSetGet*",
 	"PopulateCounter*",
+	"CounterBatchZip*",
 }
 
 func AllCounterMetricNames() []string {
