@@ -2,8 +2,8 @@ package db
 
 import (
 	"context"
-	"fmt"
-	"os"
+	"github.com/mobypolo/ya-41go/internal/shared/logger"
+	"go.uber.org/zap"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -11,13 +11,9 @@ import (
 
 var Pool *pgxpool.Pool
 
-func InitPostgres(dsn string) *pgxpool.Pool {
+func InitPostgres(dsn string) {
 	if dsn == "" {
-		_, err := fmt.Fprintln(os.Stderr, "No DATABASE_DSN provided")
-		if err != nil {
-			return &pgxpool.Pool{}
-		}
-		os.Exit(1)
+		return
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -25,21 +21,16 @@ func InitPostgres(dsn string) *pgxpool.Pool {
 
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
-		_, err := fmt.Fprintf(os.Stderr, "Failed to connect to PostgreSQL: %v\n", err)
-		if err != nil {
-			return &pgxpool.Pool{}
-		}
-		os.Exit(1)
+		logger.L().Error("failed to create db pool", zap.Error(err))
+		return
 	}
 
 	if err := pool.Ping(ctx); err != nil {
-		_, err := fmt.Fprintf(os.Stderr, "PostgreSQL ping failed: %v\n", err)
-		if err != nil {
-			return &pgxpool.Pool{}
-		}
-		os.Exit(1)
+		logger.L().Error("failed to ping db", zap.Error(err))
+		pool.Close()
+		return
 	}
 
+	logger.L().Info("connected to postgres")
 	Pool = pool
-	return pool
 }

@@ -22,6 +22,10 @@ func init() {
 
 func PingHandler(_ *service.MetricService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if db.Pool == nil {
+			http.Error(w, "no DB configured", http.StatusInternalServerError)
+			return
+		}
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()
 

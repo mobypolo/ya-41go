@@ -19,9 +19,6 @@ import _ "github.com/mobypolo/ya-41go/internal/server/handler"
 func main() {
 	cfg := cmd.ParseFlags("server")
 
-	dbPool := db.InitPostgres(cfg.DatabaseDSN)
-	defer dbPool.Close()
-
 	store := storage.NewPersistentStorage(
 		cfg.FileStoragePath,
 		time.Duration(cfg.StoreInterval)*time.Second,
@@ -31,6 +28,8 @@ func main() {
 	service.SetMetricService(service.NewMetricService(store))
 
 	logger.Init(cfg.ModeLogger)
+
+	db.InitPostgres(cfg.DatabaseDSN)
 
 	r := chi.NewRouter()
 
