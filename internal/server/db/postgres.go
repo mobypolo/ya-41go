@@ -25,11 +25,11 @@ func InitPostgres(dsn string) {
 		return
 	}
 
-	if err := pool.Ping(ctx); err != nil {
-		logger.L().Error("failed to ping db", zap.Error(err))
-		pool.Close()
-		return
-	}
+	//if err := pool.Ping(ctx); err != nil {
+	//	logger.L().Error("failed to ping db", zap.Error(err))
+	//	pool.Close()
+	//	return
+	//}
 
 	logger.L().Info("connected to postgres")
 	Pool = pool
