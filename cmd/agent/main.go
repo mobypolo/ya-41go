@@ -8,7 +8,6 @@ import (
 	"github.com/mobypolo/ya-41go/internal/agent/helpers"
 	"github.com/mobypolo/ya-41go/internal/agent/sources"
 	"github.com/mobypolo/ya-41go/internal/shared/dto"
-	"io"
 	"log"
 	"net/http"
 	"time"
@@ -224,12 +223,11 @@ func sendMetricJSONBatch(metrics []agent.Metric) {
 		log.Println("request error:", err)
 		return
 	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
 			log.Printf("error closing response body: %v", err)
 		}
-	}(resp.Body)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("server responded with %s for %s", resp.Status, url)
