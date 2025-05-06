@@ -2,7 +2,10 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/mobypolo/ya-41go/internal/server/customerrors"
 	"github.com/mobypolo/ya-41go/internal/server/helpers"
 	"github.com/mobypolo/ya-41go/internal/server/middleware"
@@ -10,6 +13,7 @@ import (
 	"github.com/mobypolo/ya-41go/internal/server/router"
 	"github.com/mobypolo/ya-41go/internal/server/service"
 	"github.com/mobypolo/ya-41go/internal/shared/dto"
+	"github.com/mobypolo/ya-41go/internal/shared/utils"
 	"io"
 	"log"
 	"net/http"
@@ -74,6 +78,7 @@ func UpdateJSONHandler(service *service.MetricService) http.HandlerFunc {
 		}
 	}
 }
+
 func UpdateJSONHandlerBatch(service *service.MetricService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
@@ -83,18 +88,44 @@ func UpdateJSONHandlerBatch(service *service.MetricService) http.HandlerFunc {
 		}
 
 		var batch []dto.Metrics
-		if err := json.Unmarshal(body, &batch); err == nil {
-			for _, metric := range batch {
-				if err := service.UpdateFromDTO(metric); err != nil {
-					customerrors.ErrorHandler(err, w)
-					return
-				}
-			}
-
-			w.WriteHeader(http.StatusOK)
+		if err := json.Unmarshal(body, &batch); err != nil {
+			http.Error(w, "invalid JSON format", http.StatusBadRequest)
 			return
 		}
 
-		http.Error(w, "invalid JSON format", http.StatusBadRequest)
+		for _, metric := range batch {
+			err := utils.RetryWithBackoff(r.Context(), 3, func() error {
+				if err := service.UpdateFromDTO(metric); err != nil {
+					if isRetriablePgError(err) {
+						return err
+					}
+					return nil
+				}
+				return nil
+			})
+
+			if err != nil {
+				http.Error(w, fmt.Sprintf("failed to update metric %s: %v", metric.ID, err), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		w.WriteHeader(http.StatusOK)
 	}
+}
+
+func isRetriablePgError(err error) bool {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		switch pgErr.Code {
+		case pgerrcode.ConnectionException,
+			pgerrcode.ConnectionDoesNotExist,
+			pgerrcode.ConnectionFailure,
+			pgerrcode.SQLClientUnableToEstablishSQLConnection,
+			pgerrcode.SQLServerRejectedEstablishmentOfSQLConnection,
+			pgerrcode.TransactionResolutionUnknown:
+			return true
+		}
+	}
+	return false
 }

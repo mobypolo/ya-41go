@@ -1,13 +1,16 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/mobypolo/ya-41go/cmd"
 	"github.com/mobypolo/ya-41go/internal/agent"
 	"github.com/mobypolo/ya-41go/internal/agent/helpers"
 	"github.com/mobypolo/ya-41go/internal/agent/sources"
 	"github.com/mobypolo/ya-41go/internal/shared/dto"
+	"github.com/mobypolo/ya-41go/internal/shared/utils"
 	"log"
 	"net/http"
 	"time"
@@ -44,7 +47,9 @@ func main() {
 			//sendMetric(m)
 			//sendMetricJSON(m)
 			//}
-			sendMetricJSONBatch(metrics)
+			_ = utils.RetryWithBackoff(context.Background(), 3, func() error {
+				return sendMetricJSONBatch(metrics)
+			})
 		}
 	}()
 
@@ -151,9 +156,9 @@ func _(m agent.Metric) {
 	}
 }
 
-func sendMetricJSONBatch(metrics []agent.Metric) {
+func sendMetricJSONBatch(metrics []agent.Metric) error {
 	if len(metrics) == 0 {
-		return
+		return errors.New("empty batch")
 	}
 
 	var batch []dto.Metrics
@@ -191,19 +196,19 @@ func sendMetricJSONBatch(metrics []agent.Metric) {
 	}
 
 	if len(batch) == 0 {
-		return
+		return errors.New("empty batch")
 	}
 
 	body, err := json.Marshal(batch)
 	if err != nil {
 		log.Printf("failed to marshal JSON batch: %v", err)
-		return
+		return err
 	}
 
 	compressedBody, err := helpers.CompressRequest(body)
 	if err != nil {
 		log.Println("compression error:", err)
-		return
+		return err
 	}
 
 	serverAddress := fmt.Sprintf("http://%s", cmd.ServerAddress)
@@ -212,7 +217,7 @@ func sendMetricJSONBatch(metrics []agent.Metric) {
 	req, err := http.NewRequest(http.MethodPost, url, compressedBody)
 	if err != nil {
 		log.Println("build request error:", err)
-		return
+		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Content-Encoding", "gzip")
@@ -221,7 +226,7 @@ func sendMetricJSONBatch(metrics []agent.Metric) {
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Println("request error:", err)
-		return
+		return err
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
@@ -232,4 +237,6 @@ func sendMetricJSONBatch(metrics []agent.Metric) {
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("server responded with %s for %s", resp.Status, url)
 	}
+
+	return nil
 }
