@@ -138,7 +138,9 @@ func (s *PersistentStorage) UpdateGauge(name string, value float64) error {
 			 VALUES ($1, 'gauge', $2)
 			 ON CONFLICT (id) DO UPDATE SET value = EXCLUDED.value`,
 			name, value)
-		return err
+		if err != nil {
+			return err
+		}
 	}
 
 	s.mu.Lock()
@@ -146,7 +148,7 @@ func (s *PersistentStorage) UpdateGauge(name string, value float64) error {
 
 	s.Gauges[name] = value
 
-	if s.storeInterval == 0 {
+	if s.storeInterval == 0 && s.db == nil {
 		return s.saveToDiskLocked()
 	}
 	return nil
@@ -160,7 +162,9 @@ func (s *PersistentStorage) UpdateCounter(name string, delta int64) error {
 			 VALUES ($1, 'counter', $2)
 			 ON CONFLICT (id) DO UPDATE SET delta = metrics.delta + EXCLUDED.delta`,
 			name, delta)
-		return err
+		if err != nil {
+			return err
+		}
 	}
 
 	s.mu.Lock()
@@ -168,7 +172,7 @@ func (s *PersistentStorage) UpdateCounter(name string, delta int64) error {
 
 	s.Counters[name] += delta
 
-	if s.storeInterval == 0 {
+	if s.storeInterval == 0 && s.db == nil {
 		return s.saveToDiskLocked()
 	}
 	return nil
