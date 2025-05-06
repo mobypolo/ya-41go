@@ -19,6 +19,7 @@ type Config struct {
 	StoreInterval   int               `env:"STORE_INTERVAL" envDefault:"300"`
 	FileStoragePath string            `env:"FILE_STORAGE_PATH" envDefault:"metrics.json"`
 	RestoreOnStart  bool              `env:"RESTORE" envDefault:"true"`
+	DatabaseDSN     string            `env:"DATABASE_DSN" envDefault:""`
 }
 
 var (
@@ -44,6 +45,7 @@ func ParseFlags(app string) Config {
 		pflag.IntVarP(&cfg.StoreInterval, "interval", "i", cfg.StoreInterval, "Store interval (seconds)")
 		pflag.StringVarP(&cfg.FileStoragePath, "file", "f", cfg.FileStoragePath, "File Storage Path")
 		pflag.BoolVarP(&cfg.RestoreOnStart, "restore", "r", cfg.RestoreOnStart, "Restore on load")
+		pflag.StringVarP(&cfg.DatabaseDSN, "dsn", "d", cfg.DatabaseDSN, "PostgresSQL DSN")
 
 	case "agent":
 		pflag.StringVarP(&ServerAddress, "address", "a", cfg.Address, "HTTP server address")

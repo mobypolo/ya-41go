@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/mobypolo/ya-41go/cmd"
+	"github.com/mobypolo/ya-41go/internal/server/db"
 	"github.com/mobypolo/ya-41go/internal/server/middleware"
 	"github.com/mobypolo/ya-41go/internal/server/route"
 	"github.com/mobypolo/ya-41go/internal/server/service"
@@ -17,6 +18,10 @@ import _ "github.com/mobypolo/ya-41go/internal/server/handler"
 
 func main() {
 	cfg := cmd.ParseFlags("server")
+
+	dbPool := db.InitPostgres(cfg.DatabaseDSN)
+	defer dbPool.Close()
+
 	store := storage.NewPersistentStorage(
 		cfg.FileStoragePath,
 		time.Duration(cfg.StoreInterval)*time.Second,
