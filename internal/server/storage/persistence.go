@@ -1,7 +1,10 @@
 package storage
 
 import (
+	"context"
 	"encoding/json"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/mobypolo/ya-41go/internal/server/db"
 	"github.com/mobypolo/ya-41go/internal/shared/logger"
 	"go.uber.org/zap"
 	"os"
@@ -16,6 +19,7 @@ type PersistentStorage struct {
 	storeInterval time.Duration
 	quitChan      chan struct{}
 	once          sync.Once
+	db            *pgxpool.Pool
 }
 
 func NewPersistentStorage(filePath string, storeInterval time.Duration, restore bool) *PersistentStorage {
@@ -33,6 +37,13 @@ func NewPersistentStorage(filePath string, storeInterval time.Duration, restore 
 		go ps.startAutoSave()
 	}
 	return ps
+}
+
+func NewPersistentStorageWithPostgres() *PersistentStorage {
+	return &PersistentStorage{
+		MemStorage: NewMemStorage(),
+		db:         db.Pool(),
+	}
 }
 
 func (s *PersistentStorage) startAutoSave() {
@@ -119,7 +130,17 @@ func (s *PersistentStorage) LoadFromDisk() error {
 	return nil
 }
 
+//goland:noinspection SqlNoDataSourceInspection
 func (s *PersistentStorage) UpdateGauge(name string, value float64) error {
+	if s.db != nil {
+		_, err := s.db.Exec(context.Background(),
+			`INSERT INTO metrics (id, m_type, value)
+			 VALUES ($1, 'gauge', $2)
+			 ON CONFLICT (id) DO UPDATE SET value = EXCLUDED.value`,
+			name, value)
+		return err
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -131,7 +152,17 @@ func (s *PersistentStorage) UpdateGauge(name string, value float64) error {
 	return nil
 }
 
+//goland:noinspection SqlNoDataSourceInspection
 func (s *PersistentStorage) UpdateCounter(name string, delta int64) error {
+	if s.db != nil {
+		_, err := s.db.Exec(context.Background(),
+			`INSERT INTO metrics (id, m_type, delta)
+			 VALUES ($1, 'counter', $2)
+			 ON CONFLICT (id) DO UPDATE SET delta = metrics.delta + EXCLUDED.delta`,
+			name, delta)
+		return err
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
