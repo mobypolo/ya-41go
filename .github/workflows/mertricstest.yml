@@ -15,18 +15,6 @@ jobs:
       - name: Check branch name
         run: |
           if [[ ! $GITHUB_HEAD_REF =~ ^iter[0-9]+$ ]] && [[ ${{ github.ref }} != "refs/heads/main" ]]; then echo "Branch name must match pattern 'iter<number>' or github.ref must be 'refs/heads/main'" && echo "Your branch is $GITHUB_HEAD_REF and github.ref is ${{ github.ref }}" && exit 1; else echo "Your branch is $GITHUB_HEAD_REF and github.ref is ${{ github.ref }}"; fi
-      - name: Install PostgreSQL client tools
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
-      - name: Wait for PostgreSQL to be ready
-        run: |
-          echo "Waiting for PostgreSQL..."
-          for i in {1..10}; do
-            pg_isready -h postgres -p 5432 && echo "PostgreSQL is ready" && exit 0
-            echo "PostgreSQL not ready yet..."
-            sleep 5
-          done
-          echo "PostgreSQL did not become ready in time" >&2
-          exit 1
 
   metricstest:
     runs-on: ubuntu-latest
@@ -45,6 +33,17 @@ jobs:
           --health-retries 5
 
     steps:
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          echo "Waiting for PostgreSQL..."
+          for i in {1..10}; do
+            pg_isready -h postgres -p 5432 && echo "PostgreSQL is ready" && exit 0
+            echo "PostgreSQL not ready yet..."
+            sleep 5
+          done
+          echo "PostgreSQL did not become ready in time" >&2
+          exit 1
+
       - name: Checkout code
         uses: actions/checkout@v2
 
