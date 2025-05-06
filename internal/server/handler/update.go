@@ -25,6 +25,7 @@ func init() {
 		}
 		route.Register("/update/*", http.MethodPost, router.MakeRouteHandler(UpdateHandler(service.GetMetricService()), middleware.AllowOnlyPost, middleware.RequirePathParts(4)))
 		route.Register("/update/", http.MethodPost, router.MakeRouteHandler(UpdateJSONHandler(service.GetMetricService()), middleware.AllowOnlyPost, middleware.SetJSONContentType))
+		route.Register("/updates/", http.MethodPost, router.MakeRouteHandler(UpdateJSONHandlerBatch(service.GetMetricService()), middleware.AllowOnlyPost, middleware.SetJSONContentType))
 	})
 }
 
@@ -73,6 +74,17 @@ func UpdateJSONHandler(service *service.MetricService) http.HandlerFunc {
 			if err != nil {
 				return
 			}
+			return
+		}
+
+		http.Error(w, "invalid JSON format", http.StatusBadRequest)
+	}
+}
+func UpdateJSONHandlerBatch(service *service.MetricService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "cannot read body", http.StatusBadRequest)
 			return
 		}
 
