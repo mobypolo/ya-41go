@@ -8,6 +8,7 @@ import (
 	"github.com/mobypolo/ya-41go/internal/agent/helpers"
 	"github.com/mobypolo/ya-41go/internal/agent/sources"
 	"github.com/mobypolo/ya-41go/internal/shared/dto"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -40,10 +41,11 @@ func main() {
 				metrics = nil
 			}
 
-			for _, m := range metrics {
-				//sendMetric(m)
-				sendMetricJSON(m)
-			}
+			//for _, m := range metrics {
+			//sendMetric(m)
+			//sendMetricJSON(m)
+			//}
+			sendMetricJSONBatch(metrics)
 		}
 	}()
 
@@ -80,7 +82,8 @@ func sendMetric(m agent.Metric) {
 	}
 }
 
-func sendMetricJSON(m agent.Metric) {
+// sendMetricJSON
+func _(m agent.Metric) {
 	serverAddress := fmt.Sprintf("http://%s", cmd.ServerAddress)
 	url := fmt.Sprintf("%s/update/", serverAddress)
 
@@ -143,6 +146,90 @@ func sendMetricJSON(m agent.Metric) {
 			log.Printf("error closing response body: %v", err)
 		}
 	}()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("server responded with %s for %s", resp.Status, url)
+	}
+}
+
+func sendMetricJSONBatch(metrics []agent.Metric) {
+	if len(metrics) == 0 {
+		return
+	}
+
+	var batch []dto.Metrics
+
+	for _, m := range metrics {
+		var payload dto.Metrics
+		payload.ID = m.Name
+		payload.MType = string(m.Type)
+
+		switch m.Type {
+		case "gauge":
+			if val, ok := m.Value.(float64); ok {
+				payload.Value = &val
+			} else {
+				log.Printf("invalid gauge value: %v", m.Value)
+				continue
+			}
+		case "counter":
+			switch v := m.Value.(type) {
+			case int64:
+				payload.Delta = &v
+			case float64:
+				val := int64(v)
+				payload.Delta = &val
+			default:
+				log.Printf("invalid counter value type: %T", v)
+				continue
+			}
+		default:
+			log.Printf("unknown metric type: %s", m.Type)
+			continue
+		}
+
+		batch = append(batch, payload)
+	}
+
+	if len(batch) == 0 {
+		return
+	}
+
+	body, err := json.Marshal(batch)
+	if err != nil {
+		log.Printf("failed to marshal JSON batch: %v", err)
+		return
+	}
+
+	compressedBody, err := helpers.CompressRequest(body)
+	if err != nil {
+		log.Println("compression error:", err)
+		return
+	}
+
+	serverAddress := fmt.Sprintf("http://%s", cmd.ServerAddress)
+	url := fmt.Sprintf("%s/update/", serverAddress)
+
+	req, err := http.NewRequest(http.MethodPost, url, compressedBody)
+	if err != nil {
+		log.Println("build request error:", err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Encoding", "gzip")
+	req.Header.Set("Accept-Encoding", "gzip")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Println("request error:", err)
+		return
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Printf("error closing response body: %v", err)
+		}
+	}(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("server responded with %s for %s", resp.Status, url)

@@ -10,6 +10,7 @@ import (
 	"github.com/mobypolo/ya-41go/internal/server/router"
 	"github.com/mobypolo/ya-41go/internal/server/service"
 	"github.com/mobypolo/ya-41go/internal/shared/dto"
+	"io"
 	"log"
 	"net/http"
 )
@@ -48,27 +49,46 @@ func UpdateHandler(service *service.MetricService) http.HandlerFunc {
 
 func UpdateJSONHandler(service *service.MetricService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var m dto.Metrics
-		if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
-			http.Error(w, "invalid JSON", http.StatusBadRequest)
-			return
-		}
-
-		if err := service.UpdateFromDTO(m); err != nil {
-			customerrors.ErrorHandler(err, w)
-			return
-		}
-
-		actual, err := service.GetAsDTO(m.MType, m.ID)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			customerrors.ErrorHandler(err, w)
+			http.Error(w, "cannot read body", http.StatusBadRequest)
 			return
 		}
 
-		err = json.NewEncoder(w).Encode(actual)
-		if err != nil {
-			http.Error(w, "invalid JSON", http.StatusBadRequest)
+		var single dto.Metrics
+		if err := json.Unmarshal(body, &single); err == nil {
+			if err := service.UpdateFromDTO(single); err != nil {
+				customerrors.ErrorHandler(err, w)
+				return
+			}
+
+			actual, err := service.GetAsDTO(single.MType, single.ID)
+			if err != nil {
+				customerrors.ErrorHandler(err, w)
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			err = json.NewEncoder(w).Encode(actual)
+			if err != nil {
+				return
+			}
 			return
 		}
+
+		var batch []dto.Metrics
+		if err := json.Unmarshal(body, &batch); err == nil {
+			for _, metric := range batch {
+				if err := service.UpdateFromDTO(metric); err != nil {
+					customerrors.ErrorHandler(err, w)
+					return
+				}
+			}
+
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		http.Error(w, "invalid JSON format", http.StatusBadRequest)
 	}
 }
