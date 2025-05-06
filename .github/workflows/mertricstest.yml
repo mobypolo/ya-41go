@@ -39,34 +39,11 @@ jobs:
       - name: Install PostgreSQL client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
-      - name: Debug PostgreSQL container network
-        run: |
-          echo "Contents of /etc/hosts:"
-          cat /etc/hosts
-          
-          echo "Checking if hostname 'postgres' resolves:"
-          getent hosts postgres || echo "Hostname 'postgres' not found"
-          
-          echo "Trying to connect to port 5432..."
-          nc -vz postgres 5432 || echo "Port 5432 on 'postgres' not open"
-          
-          echo "Listing active processes:"
-          ps aux | grep postgres
-    
-          echo "--- Checking pg_isready ---"
-          pg_isready -h postgres -p 5432 || echo "pg_isready failed"
-          
-          echo "--- List docker-like envs ---"
-          env | grep POSTGRES
-          
-          echo "Attempting curl to http://postgres:5432 (should fail but show something):"
-          curl -v --max-time 2 http://postgres:5432 || echo "(as expected, no HTTP service)"
-
       - name: Wait for PostgreSQL to be ready
         run: |
           echo "Waiting for PostgreSQL..."
           for i in {1..10}; do
-            pg_isready -h postgres -p 5432 && echo "PostgreSQL is ready" && exit 0
+            pg_isready -h 127.0.0.1 -p 5432 && echo "PostgreSQL is ready" && exit 0
             echo "PostgreSQL not ready yet..."
             sleep 5
           done
