@@ -207,7 +207,7 @@ func sendMetricJSONBatch(metrics []agent.Metric) {
 	}
 
 	serverAddress := fmt.Sprintf("http://%s", cmd.ServerAddress)
-	url := fmt.Sprintf("%s/update/", serverAddress)
+	url := fmt.Sprintf("%s/updates/", serverAddress)
 
 	req, err := http.NewRequest(http.MethodPost, url, compressedBody)
 	if err != nil {
