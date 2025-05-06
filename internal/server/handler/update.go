@@ -50,34 +50,28 @@ func UpdateHandler(service *service.MetricService) http.HandlerFunc {
 
 func UpdateJSONHandler(service *service.MetricService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		body, err := io.ReadAll(r.Body)
+		var m dto.Metrics
+		if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
+			http.Error(w, "invalid JSON", http.StatusBadRequest)
+			return
+		}
+
+		if err := service.UpdateFromDTO(m); err != nil {
+			customerrors.ErrorHandler(err, w)
+			return
+		}
+
+		actual, err := service.GetAsDTO(m.MType, m.ID)
 		if err != nil {
-			http.Error(w, "cannot read body", http.StatusBadRequest)
+			customerrors.ErrorHandler(err, w)
 			return
 		}
 
-		var single dto.Metrics
-		if err := json.Unmarshal(body, &single); err == nil {
-			if err := service.UpdateFromDTO(single); err != nil {
-				customerrors.ErrorHandler(err, w)
-				return
-			}
-
-			actual, err := service.GetAsDTO(single.MType, single.ID)
-			if err != nil {
-				customerrors.ErrorHandler(err, w)
-				return
-			}
-
-			w.Header().Set("Content-Type", "application/json")
-			err = json.NewEncoder(w).Encode(actual)
-			if err != nil {
-				return
-			}
+		err = json.NewEncoder(w).Encode(actual)
+		if err != nil {
+			http.Error(w, "invalid JSON", http.StatusBadRequest)
 			return
 		}
-
-		http.Error(w, "invalid JSON format", http.StatusBadRequest)
 	}
 }
 func UpdateJSONHandlerBatch(service *service.MetricService) http.HandlerFunc {
