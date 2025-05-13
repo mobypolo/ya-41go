@@ -2,6 +2,7 @@ package sources
 
 import (
 	"github.com/mobypolo/ya-41go/internal/agent"
+	"github.com/mobypolo/ya-41go/internal/server/storage"
 )
 
 type counterMetric struct {
@@ -15,8 +16,8 @@ func (r counterMetric) Name() string {
 	return r.name
 }
 
-func (r counterMetric) Type() agent.MetricType {
-	return agent.CounterType
+func (r counterMetric) Type() storage.MetricType {
+	return storage.CounterType
 }
 
 func (r counterMetric) Collect() (interface{}, error) {

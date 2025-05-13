@@ -5,8 +5,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/mobypolo/ya-41go/cmd"
+	"github.com/mobypolo/ya-41go/internal/server/storage"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/mobypolo/ya-41go/internal/agent"
@@ -25,19 +28,19 @@ func TestSendMetric_OK(t *testing.T) {
 	defer ts.Close()
 
 	// Подменяем адрес сервера
-	originalAddress := serverAddress
-	serverAddress = ts.URL
-	defer func() { serverAddress = originalAddress }()
+	originalAddress := cmd.ServerAddress
+	cmd.ServerAddress = strings.TrimPrefix(ts.URL, "http://")
+	defer func() { cmd.ServerAddress = originalAddress }()
 
 	m := agent.Metric{
 		Name:  "TestMetric",
-		Type:  "gauge",
+		Type:  storage.GaugeType,
 		Value: 42.42,
 	}
 
 	sendMetric(m)
 
-	expectedPath := fmt.Sprintf("/update/%s/%s/%v", m.Type, m.Name, m.Value)
+	expectedPath := fmt.Sprintf("/update_plain/%s/%s/%v", m.Type, m.Name, m.Value)
 	assert.Equal(t, expectedPath, received)
 }
 
@@ -47,13 +50,14 @@ func TestSendMetric_ServerError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	originalAddress := serverAddress
-	serverAddress = ts.URL
-	defer func() { serverAddress = originalAddress }()
+	// Подменяем адрес сервера
+	originalAddress := cmd.ServerAddress
+	cmd.ServerAddress = strings.TrimPrefix(ts.URL, "http://")
+	defer func() { cmd.ServerAddress = originalAddress }()
 
 	m := agent.Metric{
 		Name:  "ErrorMetric",
-		Type:  "counter",
+		Type:  storage.CounterType,
 		Value: 1,
 	}
 

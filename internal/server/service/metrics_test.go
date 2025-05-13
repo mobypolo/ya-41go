@@ -6,6 +6,7 @@ package service_test
 import (
 	"github.com/mobypolo/ya-41go/internal/server/customerrors"
 	"github.com/mobypolo/ya-41go/internal/server/service"
+	"github.com/mobypolo/ya-41go/internal/server/storage"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -46,7 +47,7 @@ func TestMetricService_UpdateGauge_OK(t *testing.T) {
 	repo := &mockRepo{}
 	svc := service.NewMetricService(repo)
 
-	err := svc.Update("gauge", "temperature", "36.6")
+	err := svc.Update(storage.GaugeType, "temperature", "36.6")
 	assert.NoError(t, err)
 	assert.True(t, repo.updateCalled)
 	assert.Equal(t, 36.6, repo.gaugeValue)
@@ -56,7 +57,7 @@ func TestMetricService_Update_InvalidGaugeName(t *testing.T) {
 	repo := &mockRepo{}
 	svc := service.NewMetricService(repo)
 
-	err := svc.Update("gauge", "invalid", "36.6")
+	err := svc.Update(storage.GaugeType, "invalid", "36.6")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid name")
 }
@@ -65,7 +66,7 @@ func TestMetricService_Update_InvalidValue(t *testing.T) {
 	repo := &mockRepo{}
 	svc := service.NewMetricService(repo)
 
-	err := svc.Update("gauge", "temperature", "abc")
+	err := svc.Update(storage.GaugeType, "temperature", "abc")
 	assert.ErrorIs(t, err, customerrors.ErrInvalidValue)
 }
 
@@ -73,16 +74,16 @@ func TestMetricService_GetGauge_OK(t *testing.T) {
 	repo := &mockRepo{gaugeValue: 42.5}
 	svc := service.NewMetricService(repo)
 
-	val, err := svc.Get("gauge", "temperature")
+	val, err := svc.Get(storage.GaugeType, "temperature")
 	assert.NoError(t, err)
-	assert.Equal(t, "42.500", val)
+	assert.Equal(t, "42.5", val)
 }
 
 func TestMetricService_GetGauge_NotFound(t *testing.T) {
 	repo := &mockRepo{getGaugeErr: customerrors.ErrNotFound}
 	svc := service.NewMetricService(repo)
 
-	_, err := svc.Get("gauge", "temperature")
+	_, err := svc.Get(storage.GaugeType, "temperature")
 	assert.ErrorIs(t, err, customerrors.ErrNotFound)
 }
 

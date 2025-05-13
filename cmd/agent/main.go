@@ -9,6 +9,7 @@ import (
 	"github.com/mobypolo/ya-41go/internal/agent"
 	"github.com/mobypolo/ya-41go/internal/agent/helpers"
 	"github.com/mobypolo/ya-41go/internal/agent/sources"
+	"github.com/mobypolo/ya-41go/internal/server/storage"
 	"github.com/mobypolo/ya-41go/internal/shared/dto"
 	"github.com/mobypolo/ya-41go/internal/shared/utils"
 	"log"
@@ -93,17 +94,17 @@ func _(m agent.Metric) {
 
 	var payload dto.Metrics
 	payload.ID = m.Name
-	payload.MType = string(m.Type)
+	payload.MType = m.Type
 
 	switch m.Type {
-	case "gauge":
+	case storage.GaugeType:
 		if val, ok := m.Value.(float64); ok {
 			payload.Value = &val
 		} else {
 			log.Printf("invalid gauge value: %v", m.Value)
 			return
 		}
-	case "counter":
+	case storage.CounterType:
 		switch v := m.Value.(type) {
 		case int64:
 			payload.Delta = &v
@@ -166,17 +167,17 @@ func sendMetricJSONBatch(metrics []agent.Metric) error {
 	for _, m := range metrics {
 		var payload dto.Metrics
 		payload.ID = m.Name
-		payload.MType = string(m.Type)
+		payload.MType = m.Type
 
 		switch m.Type {
-		case "gauge":
+		case storage.GaugeType:
 			if val, ok := m.Value.(float64); ok {
 				payload.Value = &val
 			} else {
 				log.Printf("invalid gauge value: %v", m.Value)
 				continue
 			}
-		case "counter":
+		case storage.CounterType:
 			switch v := m.Value.(type) {
 			case int64:
 				payload.Delta = &v

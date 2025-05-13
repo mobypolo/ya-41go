@@ -12,13 +12,13 @@ type MetricProcessor interface {
 }
 
 // Регистр
-var processors = make(map[string]MetricProcessor)
+var processors = make(map[MetricType]MetricProcessor)
 
-func RegisterProcessor(metricType string, processor MetricProcessor) {
+func RegisterProcessor(metricType MetricType, processor MetricProcessor) {
 	processors[metricType] = processor
 }
 
-func GetProcessor(metricType string) (MetricProcessor, error) {
+func GetProcessor(metricType MetricType) (MetricProcessor, error) {
 	p, ok := processors[metricType]
 	if !ok {
 		return nil, customerrors.ErrUnsupportedType

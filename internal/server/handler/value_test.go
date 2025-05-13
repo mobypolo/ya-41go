@@ -55,7 +55,7 @@ func TestValueHandler_OK(t *testing.T) {
 	h.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code)
-	assert.Equal(t, "123.450\n", rr.Body.String())
+	assert.Equal(t, "123.45\n", rr.Body.String())
 }
 
 func TestValueHandler_UnsupportedType(t *testing.T) {

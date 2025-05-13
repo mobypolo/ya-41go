@@ -30,7 +30,7 @@ func NewMetricService(store repositories.MetricsRepository) *MetricService {
 	return &MetricService{store: store}
 }
 
-func (s *MetricService) Update(metricType, name, value string) error {
+func (s *MetricService) Update(metricType storage.MetricType, name, value string) error {
 	processor, err := storage.GetProcessor(metricType)
 	if err != nil {
 		return err
@@ -54,8 +54,8 @@ func (s *MetricService) Update(metricType, name, value string) error {
 	return processor.Update(s.store, name, parsedValue)
 }
 
-func (s *MetricService) Get(metricType, name string) (string, error) {
-	switch storage.MetricType(metricType) {
+func (s *MetricService) Get(metricType storage.MetricType, name string) (string, error) {
+	switch metricType {
 	case storage.GaugeType:
 		if err := s.validateGaugeName(name); err != nil {
 			return "", err
@@ -97,12 +97,12 @@ func (s *MetricService) validateCounterName(name string) error {
 
 func (s *MetricService) UpdateFromDTO(m dto.Metrics) error {
 	switch m.MType {
-	case "gauge":
+	case storage.GaugeType:
 		if m.Value == nil {
 			return customerrors.ErrInvalidValue
 		}
 		return s.store.UpdateGauge(m.ID, *m.Value)
-	case "counter":
+	case storage.CounterType:
 		if m.Delta == nil {
 			return customerrors.ErrInvalidValue
 		}
@@ -112,15 +112,15 @@ func (s *MetricService) UpdateFromDTO(m dto.Metrics) error {
 	}
 }
 
-func (s *MetricService) GetAsDTO(mType, id string) (dto.Metrics, error) {
+func (s *MetricService) GetAsDTO(mType storage.MetricType, id string) (dto.Metrics, error) {
 	switch mType {
-	case "gauge":
+	case storage.GaugeType:
 		val, err := s.store.GetGauge(id)
 		if err != nil {
 			return dto.Metrics{}, err
 		}
 		return dto.Metrics{ID: id, MType: mType, Value: &val}, nil
-	case "counter":
+	case storage.CounterType:
 		val, err := s.store.GetCounter(id)
 		if err != nil {
 			return dto.Metrics{}, err

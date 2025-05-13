@@ -9,6 +9,7 @@ import (
 	"github.com/mobypolo/ya-41go/internal/server/route"
 	"github.com/mobypolo/ya-41go/internal/server/router"
 	"github.com/mobypolo/ya-41go/internal/server/service"
+	"github.com/mobypolo/ya-41go/internal/server/storage"
 	"github.com/mobypolo/ya-41go/internal/shared/dto"
 	"log"
 	"net/http"
@@ -29,7 +30,7 @@ func ValueHandler(service *service.MetricService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		parts := helpers.SplitStrToChunks(r.URL.Path)
 
-		metricType := parts[1]
+		metricType := storage.MetricType(parts[1])
 		metricName := parts[2]
 
 		val, err := service.Get(metricType, metricName)

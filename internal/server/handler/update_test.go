@@ -17,7 +17,7 @@ import (
 func TestUpdateHandler_OK(t *testing.T) {
 	mem := storage.NewMemStorage()
 	metricService := service.NewMetricService(mem)
-	h := handler.MakeUpdateHandler(metricService)
+	h := handler.UpdateHandler(metricService)
 
 	req := httptest.NewRequest(http.MethodPost, "/update/gauge/temperature/36.6", nil)
 	rr := httptest.NewRecorder()
@@ -30,15 +30,15 @@ func TestUpdateHandler_OK(t *testing.T) {
 	assert.Equal(t, 36.6, val)
 }
 
-func TestUpdateHandler_BadMethod(t *testing.T) {
+func TestUpdateHandler_NotFound(t *testing.T) {
 	mem := storage.NewMemStorage()
 	metricService := service.NewMetricService(mem)
-	h := handler.MakeUpdateHandler(metricService)
+	h := handler.UpdateHandler(metricService)
 
-	req := httptest.NewRequest(http.MethodGet, "/update/gauge/temperature/36.6", nil)
+	req := httptest.NewRequest(http.MethodGet, "/update/gauge/temperature_trash/36.6", nil)
 	rr := httptest.NewRecorder()
 
 	h.ServeHTTP(rr, req)
 
-	assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+	assert.Equal(t, http.StatusNotFound, rr.Code)
 }

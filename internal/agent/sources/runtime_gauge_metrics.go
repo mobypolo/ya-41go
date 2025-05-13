@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"github.com/mobypolo/ya-41go/internal/server/storage"
 	"github.com/mobypolo/ya-41go/internal/shared/utils"
 	"runtime"
 	"sync"
@@ -40,8 +41,8 @@ func (r runtimeMetric) Name() string {
 	return r.name
 }
 
-func (r runtimeMetric) Type() agent.MetricType {
-	return agent.GaugeType
+func (r runtimeMetric) Type() storage.MetricType {
+	return storage.GaugeType
 }
 
 func (r runtimeMetric) Collect() (interface{}, error) {

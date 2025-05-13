@@ -5,6 +5,6 @@ import (
 )
 
 func init() {
-	storage.RegisterProcessor(string(storage.GaugeType), NewGaugeProcessor())
-	storage.RegisterProcessor(string(storage.CounterType), NewCounterProcessor())
+	storage.RegisterProcessor(storage.GaugeType, NewGaugeProcessor())
+	storage.RegisterProcessor(storage.CounterType, NewCounterProcessor())
 }

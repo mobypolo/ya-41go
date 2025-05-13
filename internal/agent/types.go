@@ -1,14 +1,11 @@
 package agent
 
-type MetricType string
+import "github.com/mobypolo/ya-41go/internal/server/storage"
 
-const (
-	GaugeType   MetricType = "gauge"
-	CounterType MetricType = "counter"
-)
+type MetricType string
 
 type Metric struct {
 	Name  string
-	Type  MetricType
+	Type  storage.MetricType
 	Value interface{} // float64 или int64
 }

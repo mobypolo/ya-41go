@@ -12,6 +12,7 @@ import (
 	"github.com/mobypolo/ya-41go/internal/server/route"
 	"github.com/mobypolo/ya-41go/internal/server/router"
 	"github.com/mobypolo/ya-41go/internal/server/service"
+	"github.com/mobypolo/ya-41go/internal/server/storage"
 	"github.com/mobypolo/ya-41go/internal/shared/dto"
 	"github.com/mobypolo/ya-41go/internal/shared/utils"
 	"io"
@@ -40,7 +41,7 @@ func UpdateHandler(service *service.MetricService) http.HandlerFunc {
 
 		metricType, metricName, metricValue := parts[1], parts[2], parts[3]
 
-		if err := service.Update(metricType, metricName, metricValue); err != nil {
+		if err := service.Update(storage.MetricType(metricType), metricName, metricValue); err != nil {
 			customerrors.ErrorHandler(err, w)
 			return
 		}
