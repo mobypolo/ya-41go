@@ -134,9 +134,7 @@ func (s *PersistentStorage) LoadFromDisk() error {
 func (s *PersistentStorage) UpdateGauge(name string, value float64) error {
 	if s.db != nil {
 		_, err := s.db.Exec(context.Background(),
-			`INSERT INTO metrics (id, m_type, value)
-			 VALUES ($1, 'gauge', $2)
-			 ON CONFLICT (id) DO UPDATE SET value = EXCLUDED.value`,
+			db.InsertOrUpdateGauge,
 			name, value)
 		if err != nil {
 			return err
@@ -158,9 +156,7 @@ func (s *PersistentStorage) UpdateGauge(name string, value float64) error {
 func (s *PersistentStorage) UpdateCounter(name string, delta int64) error {
 	if s.db != nil {
 		_, err := s.db.Exec(context.Background(),
-			`INSERT INTO metrics (id, m_type, delta)
-			 VALUES ($1, 'counter', $2)
-			 ON CONFLICT (id) DO UPDATE SET delta = metrics.delta + EXCLUDED.delta`,
+			db.InsertOrUpdateCounter,
 			name, delta)
 		if err != nil {
 			return err
