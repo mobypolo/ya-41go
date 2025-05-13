@@ -19,7 +19,7 @@ func init() {
 	})
 }
 
-func IndexHandler(service *service.MetricService) http.HandlerFunc {
+func IndexHandler(service service.MetricService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 

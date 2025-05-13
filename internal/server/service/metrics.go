@@ -10,27 +10,37 @@ import (
 	"strconv"
 )
 
+type MetricService interface {
+	Update(metricType storage.MetricType, name, value string) error
+	Get(metricType storage.MetricType, name string) (string, error)
+	GetAvailableMetrics() map[string]string
+	validateGaugeName(name string) error
+	validateCounterName(name string) error
+	UpdateFromDTO(m dto.Metrics) error
+	GetAsDTO(mType storage.MetricType, id string) (dto.Metrics, error)
+}
+
 var (
 	metricService *MetricService
 )
 
-func GetMetricService() *MetricService {
-	return metricService
+func GetMetricService() MetricService {
+	return *metricService
 }
 
-func SetMetricService(service *MetricService) {
-	metricService = service
+func SetMetricService(service MetricService) {
+	metricService = &service
 }
 
-type MetricService struct {
+type SMetricService struct {
 	store repositories.MetricsRepository
 }
 
-func NewMetricService(store repositories.MetricsRepository) *MetricService {
-	return &MetricService{store: store}
+func NewMetricService(store repositories.MetricsRepository) *SMetricService {
+	return &SMetricService{store: store}
 }
 
-func (s *MetricService) Update(metricType storage.MetricType, name, value string) error {
+func (s *SMetricService) Update(metricType storage.MetricType, name, value string) error {
 	processor, err := storage.GetProcessor(metricType)
 	if err != nil {
 		return err
@@ -54,7 +64,7 @@ func (s *MetricService) Update(metricType storage.MetricType, name, value string
 	return processor.Update(s.store, name, parsedValue)
 }
 
-func (s *MetricService) Get(metricType storage.MetricType, name string) (string, error) {
+func (s *SMetricService) Get(metricType storage.MetricType, name string) (string, error) {
 	switch metricType {
 	case storage.GaugeType:
 		if err := s.validateGaugeName(name); err != nil {
@@ -81,21 +91,21 @@ func (s *MetricService) Get(metricType storage.MetricType, name string) (string,
 	}
 }
 
-func (s *MetricService) GetAvailableMetrics() map[string]string {
+func (s *SMetricService) GetAvailableMetrics() map[string]string {
 	return s.store.GetAllCounters()
 }
 
-func (s *MetricService) validateGaugeName(name string) error {
+func (s *SMetricService) validateGaugeName(name string) error {
 	_, err := storage.ParseGaugeMetric(name)
 	return err
 }
 
-func (s *MetricService) validateCounterName(name string) error {
+func (s *SMetricService) validateCounterName(name string) error {
 	_, err := storage.ParseCounterMetric(name)
 	return err
 }
 
-func (s *MetricService) UpdateFromDTO(m dto.Metrics) error {
+func (s *SMetricService) UpdateFromDTO(m dto.Metrics) error {
 	switch m.MType {
 	case storage.GaugeType:
 		if m.Value == nil {
@@ -112,7 +122,7 @@ func (s *MetricService) UpdateFromDTO(m dto.Metrics) error {
 	}
 }
 
-func (s *MetricService) GetAsDTO(mType storage.MetricType, id string) (dto.Metrics, error) {
+func (s *SMetricService) GetAsDTO(mType storage.MetricType, id string) (dto.Metrics, error) {
 	switch mType {
 	case storage.GaugeType:
 		val, err := s.store.GetGauge(id)

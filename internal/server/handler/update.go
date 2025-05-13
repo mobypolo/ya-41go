@@ -34,7 +34,7 @@ func init() {
 	})
 }
 
-func UpdateHandler(service *service.MetricService) http.HandlerFunc {
+func UpdateHandler(service service.MetricService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		parts := helpers.SplitStrToChunks(r.URL.Path)
@@ -53,7 +53,7 @@ func UpdateHandler(service *service.MetricService) http.HandlerFunc {
 	}
 }
 
-func UpdateJSONHandler(service *service.MetricService) http.HandlerFunc {
+func UpdateJSONHandler(service service.MetricService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var m dto.Metrics
 		if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
@@ -80,7 +80,7 @@ func UpdateJSONHandler(service *service.MetricService) http.HandlerFunc {
 	}
 }
 
-func UpdateJSONHandlerBatch(service *service.MetricService) http.HandlerFunc {
+func UpdateJSONHandlerBatch(service service.MetricService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {

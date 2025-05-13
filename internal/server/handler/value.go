@@ -26,7 +26,7 @@ func init() {
 	})
 }
 
-func ValueHandler(service *service.MetricService) http.HandlerFunc {
+func ValueHandler(service service.MetricService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		parts := helpers.SplitStrToChunks(r.URL.Path)
 
@@ -47,7 +47,7 @@ func ValueHandler(service *service.MetricService) http.HandlerFunc {
 	}
 }
 
-func ValueJSONHandler(service *service.MetricService) http.HandlerFunc {
+func ValueJSONHandler(service service.MetricService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req dto.Metrics
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
