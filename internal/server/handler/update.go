@@ -8,9 +8,6 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/mobypolo/ya-41go/internal/server/customerrors"
 	"github.com/mobypolo/ya-41go/internal/server/helpers"
-	"github.com/mobypolo/ya-41go/internal/server/middleware"
-	"github.com/mobypolo/ya-41go/internal/server/route"
-	"github.com/mobypolo/ya-41go/internal/server/router"
 	"github.com/mobypolo/ya-41go/internal/server/service"
 	"github.com/mobypolo/ya-41go/internal/server/storage"
 	"github.com/mobypolo/ya-41go/internal/shared/dto"
@@ -21,18 +18,6 @@ import (
 )
 
 import _ "github.com/mobypolo/ya-41go/internal/server/metrics"
-
-func init() {
-	route.DeferRegister(func() {
-		s := service.GetMetricService()
-		if s == nil {
-			panic("metricService not set before route registration")
-		}
-		route.Register("/update/*", http.MethodPost, router.MakeRouteHandler(UpdateHandler(service.GetMetricService()), middleware.AllowOnlyPost, middleware.RequirePathParts(4)))
-		route.Register("/update/", http.MethodPost, router.MakeRouteHandler(UpdateJSONHandler(service.GetMetricService()), middleware.AllowOnlyPost, middleware.SetJSONContentType))
-		route.Register("/updates/", http.MethodPost, router.MakeRouteHandler(UpdateJSONHandlerBatch(service.GetMetricService()), middleware.AllowOnlyPost, middleware.SetJSONContentType))
-	})
-}
 
 func UpdateHandler(service service.MetricService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

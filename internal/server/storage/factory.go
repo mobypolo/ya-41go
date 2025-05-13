@@ -1,15 +1,14 @@
 package storage
 
 import (
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mobypolo/ya-41go/cmd"
-	"github.com/mobypolo/ya-41go/internal/server/db"
 	"time"
 )
 
-func MakeStorage(cfg cmd.Config) *PersistentStorage {
-	if cfg.DatabaseDSN != "" {
-		db.InitPostgres(cfg.DatabaseDSN)
-		return NewPersistentStorageWithPostgres()
+func MakeStorage(cfg cmd.Config, db *pgxpool.Pool) *PersistentStorage {
+	if cfg.DatabaseDSN != "" && db != nil {
+		return NewPersistentStorageWithPostgres(db)
 	}
 
 	ps := NewPersistentStorage(

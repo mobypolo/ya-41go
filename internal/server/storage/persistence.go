@@ -39,10 +39,10 @@ func NewPersistentStorage(filePath string, storeInterval time.Duration, restore 
 	return ps
 }
 
-func NewPersistentStorageWithPostgres() *PersistentStorage {
+func NewPersistentStorageWithPostgres(db *pgxpool.Pool) *PersistentStorage {
 	return &PersistentStorage{
 		MemStorage: NewMemStorage(),
-		db:         db.Pool(),
+		db:         db,
 	}
 }
 

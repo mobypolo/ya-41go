@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/mobypolo/ya-41go/cmd"
+	"github.com/mobypolo/ya-41go/internal/server/db"
 	"github.com/mobypolo/ya-41go/internal/server/middleware"
 	"github.com/mobypolo/ya-41go/internal/server/route"
 	"github.com/mobypolo/ya-41go/internal/server/service"
@@ -18,7 +19,8 @@ func main() {
 	cfg := cmd.ParseFlags("server")
 	logger.Init(cfg.ModeLogger)
 
-	store := storage.MakeStorage(cfg)
+	dbInstancePool := db.InitPostgres(cfg.DatabaseDSN)
+	store := storage.MakeStorage(cfg, dbInstancePool)
 
 	defer store.Stop()
 	service.SetMetricService(service.NewMetricService(store))
@@ -29,6 +31,7 @@ func main() {
 	r.Use(middleware.GzipDecompressMiddleware)
 	r.Use(middleware.GzipCompressMiddleware)
 
+	route.RegisterAllRoutes(dbInstancePool)
 	route.MountInto(r)
 
 	logger.L().Info("Server started", zap.String("addr", cmd.ServerAddress))

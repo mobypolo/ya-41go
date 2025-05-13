@@ -5,26 +5,12 @@ import (
 	"fmt"
 	"github.com/mobypolo/ya-41go/internal/server/customerrors"
 	"github.com/mobypolo/ya-41go/internal/server/helpers"
-	"github.com/mobypolo/ya-41go/internal/server/middleware"
-	"github.com/mobypolo/ya-41go/internal/server/route"
-	"github.com/mobypolo/ya-41go/internal/server/router"
 	"github.com/mobypolo/ya-41go/internal/server/service"
 	"github.com/mobypolo/ya-41go/internal/server/storage"
 	"github.com/mobypolo/ya-41go/internal/shared/dto"
 	"log"
 	"net/http"
 )
-
-func init() {
-	route.DeferRegister(func() {
-		s := service.GetMetricService()
-		if s == nil {
-			panic("metricService not set before route registration")
-		}
-		route.Register("/value/*", http.MethodGet, router.MakeRouteHandler(ValueHandler(service.GetMetricService())))
-		route.Register("/value/", http.MethodPost, router.MakeRouteHandler(ValueJSONHandler(service.GetMetricService()), middleware.SetJSONContentType))
-	})
-}
 
 func ValueHandler(service service.MetricService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

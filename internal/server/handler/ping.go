@@ -2,34 +2,22 @@ package handler
 
 import (
 	"context"
-	"github.com/mobypolo/ya-41go/internal/server/db"
-	"github.com/mobypolo/ya-41go/internal/server/route"
-	"github.com/mobypolo/ya-41go/internal/server/router"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mobypolo/ya-41go/internal/server/service"
 	"net/http"
 	"time"
 )
 
-func init() {
-	route.DeferRegister(func() {
-		s := service.GetMetricService()
-		if s == nil {
-			panic("metricService not set before route registration")
-		}
-		route.Register("/ping", http.MethodGet, router.MakeRouteHandler(PingHandler(service.GetMetricService())))
-	})
-}
-
-func PingHandler(_ service.MetricService) http.HandlerFunc {
+func PingHandler(_ service.MetricService, db *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if db.Pool() == nil {
+		if db == nil {
 			http.Error(w, "no DB configured", http.StatusInternalServerError)
 			return
 		}
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()
 
-		err := db.Pool().Ping(ctx)
+		err := db.Ping(ctx)
 		if err != nil {
 			http.Error(w, "database unavailable", http.StatusInternalServerError)
 			return
