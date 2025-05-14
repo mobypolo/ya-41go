@@ -37,6 +37,7 @@ var AllowedGaugeMetrics = []string{
 
 	"testSetGet*",
 	"GaugeBatchZip*",
+	"GetSetZip*",
 }
 
 func AllGaugeMetricNames() []string {
