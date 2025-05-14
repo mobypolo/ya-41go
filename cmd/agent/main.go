@@ -19,6 +19,7 @@ import (
 
 func main() {
 	cfg := cmd.ParseFlags("agent")
+	log.Println("Started agent with cfg : ", fmt.Sprintf("%+v", cfg))
 	metricsChan := make(chan []agent.Metric, 1)
 
 	go func() {

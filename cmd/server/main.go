@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/mobypolo/ya-41go/cmd"
 	"github.com/mobypolo/ya-41go/internal/server/db"
@@ -10,6 +11,7 @@ import (
 	"github.com/mobypolo/ya-41go/internal/server/storage"
 	"github.com/mobypolo/ya-41go/internal/shared/logger"
 	"go.uber.org/zap"
+	"log"
 	"net/http"
 )
 
@@ -17,6 +19,7 @@ import _ "github.com/mobypolo/ya-41go/internal/server/handler"
 
 func main() {
 	cfg := cmd.ParseFlags("server")
+	log.Println("Started server with cfg : ", fmt.Sprintf("%+v", cfg))
 	logger.Init(cfg.ModeLogger)
 
 	dbInstancePool := db.InitPostgres(cfg.DatabaseDSN)
