@@ -2,24 +2,12 @@ package handler
 
 import (
 	"fmt"
-	"github.com/mobypolo/ya-41go/internal/server/route"
-	"github.com/mobypolo/ya-41go/internal/server/router"
 	"github.com/mobypolo/ya-41go/internal/server/service"
 	"net/http"
 	"sort"
 )
 
-func init() {
-	route.DeferRegister(func() {
-		s := service.GetMetricService()
-		if s == nil {
-			panic("metricService not set before route registration")
-		}
-		route.Register("/", http.MethodPost, router.MakeRouteHandler(IndexHandler(service.GetMetricService())))
-	})
-}
-
-func IndexHandler(service *service.MetricService) http.HandlerFunc {
+func IndexHandler(service service.MetricService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 

@@ -34,7 +34,7 @@ func NewMemStorage() *MemStorage {
 	}
 }
 
-func (s *MemStorage) UpdateMetric(metricType, name, value string) error {
+func (s *MemStorage) UpdateMetric(metricType MetricType, name, value string) error {
 	processor, err := GetProcessor(metricType)
 	if err != nil {
 		return err

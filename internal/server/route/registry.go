@@ -1,6 +1,13 @@
 package route
 
-import "net/http"
+import (
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/mobypolo/ya-41go/internal/server/handler"
+	"github.com/mobypolo/ya-41go/internal/server/middleware"
+	"github.com/mobypolo/ya-41go/internal/server/router"
+	"github.com/mobypolo/ya-41go/internal/server/service"
+	"net/http"
+)
 
 type Route struct {
 	Path    string
@@ -9,20 +16,26 @@ type Route struct {
 }
 
 var routes []Route
-var deferredRoutes []func()
 
 func Register(path, method string, handler http.Handler) {
 	routes = append(routes, Route{Path: path, Method: method, Handler: handler})
 }
 
-func DeferRegister(fn func()) {
-	deferredRoutes = append(deferredRoutes, fn)
+func RegisterAllRoutes(db *pgxpool.Pool) {
+	s := service.GetMetricService()
+	if s == nil {
+		panic("metricService not set before route registration")
+	}
+	Register("/", http.MethodPost, router.MakeRouteHandler(handler.IndexHandler(s)))
+	Register("/ping", http.MethodGet, router.MakeRouteHandler(handler.PingHandler(s, db)))
+	Register("/update/*", http.MethodPost, router.MakeRouteHandler(handler.UpdateHandler(s), middleware.AllowOnlyPost, middleware.RequirePathParts(4)))
+	Register("/update/", http.MethodPost, router.MakeRouteHandler(handler.UpdateJSONHandler(s), middleware.AllowOnlyPost, middleware.SetJSONContentType))
+	Register("/updates/", http.MethodPost, router.MakeRouteHandler(handler.UpdateJSONHandlerBatch(s), middleware.AllowOnlyPost, middleware.SetJSONContentType))
+	Register("/value/*", http.MethodGet, router.MakeRouteHandler(handler.ValueHandler(s)))
+	Register("/value/", http.MethodPost, router.MakeRouteHandler(handler.ValueJSONHandler(s), middleware.SetJSONContentType))
 }
 
 func MountInto(mux interface{}) {
-	for _, fn := range deferredRoutes {
-		fn()
-	}
 	for _, r := range routes {
 		switch m := mux.(type) {
 		case interface {

@@ -2,39 +2,31 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/mobypolo/ya-41go/internal/server/customerrors"
 	"github.com/mobypolo/ya-41go/internal/server/helpers"
-	"github.com/mobypolo/ya-41go/internal/server/middleware"
-	"github.com/mobypolo/ya-41go/internal/server/route"
-	"github.com/mobypolo/ya-41go/internal/server/router"
 	"github.com/mobypolo/ya-41go/internal/server/service"
+	"github.com/mobypolo/ya-41go/internal/server/storage"
 	"github.com/mobypolo/ya-41go/internal/shared/dto"
+	"github.com/mobypolo/ya-41go/internal/shared/utils"
+	"io"
 	"log"
 	"net/http"
 )
 
 import _ "github.com/mobypolo/ya-41go/internal/server/metrics"
 
-func init() {
-	route.DeferRegister(func() {
-		s := service.GetMetricService()
-		if s == nil {
-			panic("metricService not set before route registration")
-		}
-		route.Register("/update/*", http.MethodPost, router.MakeRouteHandler(UpdateHandler(service.GetMetricService()), middleware.AllowOnlyPost, middleware.RequirePathParts(4)))
-		route.Register("/update/", http.MethodPost, router.MakeRouteHandler(UpdateJSONHandler(service.GetMetricService()), middleware.AllowOnlyPost, middleware.SetJSONContentType))
-	})
-}
-
-func UpdateHandler(service *service.MetricService) http.HandlerFunc {
+func UpdateHandler(service service.MetricService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		parts := helpers.SplitStrToChunks(r.URL.Path)
 
 		metricType, metricName, metricValue := parts[1], parts[2], parts[3]
 
-		if err := service.Update(metricType, metricName, metricValue); err != nil {
+		if err := service.Update(storage.MetricType(metricType), metricName, metricValue); err != nil {
 			customerrors.ErrorHandler(err, w)
 			return
 		}
@@ -46,7 +38,7 @@ func UpdateHandler(service *service.MetricService) http.HandlerFunc {
 	}
 }
 
-func UpdateJSONHandler(service *service.MetricService) http.HandlerFunc {
+func UpdateJSONHandler(service service.MetricService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var m dto.Metrics
 		if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
@@ -71,4 +63,55 @@ func UpdateJSONHandler(service *service.MetricService) http.HandlerFunc {
 			return
 		}
 	}
+}
+
+func UpdateJSONHandlerBatch(service service.MetricService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "cannot read body", http.StatusBadRequest)
+			return
+		}
+
+		var batch []dto.Metrics
+		if err := json.Unmarshal(body, &batch); err != nil {
+			http.Error(w, "invalid JSON format", http.StatusBadRequest)
+			return
+		}
+
+		for _, metric := range batch {
+			err := utils.RetryWithBackoff(r.Context(), 3, func() error {
+				if err := service.UpdateFromDTO(metric); err != nil {
+					if isRetriablePgError(err) {
+						return err
+					}
+					return nil
+				}
+				return nil
+			})
+
+			if err != nil {
+				http.Error(w, fmt.Sprintf("failed to update metric %s: %v", metric.ID, err), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
+func isRetriablePgError(err error) bool {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		switch pgErr.Code {
+		case pgerrcode.ConnectionException,
+			pgerrcode.ConnectionDoesNotExist,
+			pgerrcode.ConnectionFailure,
+			pgerrcode.SQLClientUnableToEstablishSQLConnection,
+			pgerrcode.SQLServerRejectedEstablishmentOfSQLConnection,
+			pgerrcode.TransactionResolutionUnknown:
+			return true
+		}
+	}
+	return false
 }

@@ -1,13 +1,17 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/mobypolo/ya-41go/cmd"
 	"github.com/mobypolo/ya-41go/internal/agent"
 	"github.com/mobypolo/ya-41go/internal/agent/helpers"
 	"github.com/mobypolo/ya-41go/internal/agent/sources"
+	"github.com/mobypolo/ya-41go/internal/server/storage"
 	"github.com/mobypolo/ya-41go/internal/shared/dto"
+	"github.com/mobypolo/ya-41go/internal/shared/utils"
 	"log"
 	"net/http"
 	"time"
@@ -40,10 +44,13 @@ func main() {
 				metrics = nil
 			}
 
-			for _, m := range metrics {
-				//sendMetric(m)
-				sendMetricJSON(m)
-			}
+			//for _, m := range metrics {
+			//sendMetric(m)
+			//sendMetricJSON(m)
+			//}
+			_ = utils.RetryWithBackoff(context.Background(), 3, func() error {
+				return sendMetricJSONBatch(metrics)
+			})
 		}
 	}()
 
@@ -80,23 +87,24 @@ func sendMetric(m agent.Metric) {
 	}
 }
 
-func sendMetricJSON(m agent.Metric) {
+// sendMetricJSON
+func _(m agent.Metric) {
 	serverAddress := fmt.Sprintf("http://%s", cmd.ServerAddress)
 	url := fmt.Sprintf("%s/update/", serverAddress)
 
 	var payload dto.Metrics
 	payload.ID = m.Name
-	payload.MType = string(m.Type)
+	payload.MType = m.Type
 
 	switch m.Type {
-	case "gauge":
+	case storage.GaugeType:
 		if val, ok := m.Value.(float64); ok {
 			payload.Value = &val
 		} else {
 			log.Printf("invalid gauge value: %v", m.Value)
 			return
 		}
-	case "counter":
+	case storage.CounterType:
 		switch v := m.Value.(type) {
 		case int64:
 			payload.Delta = &v
@@ -147,4 +155,89 @@ func sendMetricJSON(m agent.Metric) {
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("server responded with %s for %s", resp.Status, url)
 	}
+}
+
+func sendMetricJSONBatch(metrics []agent.Metric) error {
+	if len(metrics) == 0 {
+		return errors.New("empty batch")
+	}
+
+	var batch []dto.Metrics
+
+	for _, m := range metrics {
+		var payload dto.Metrics
+		payload.ID = m.Name
+		payload.MType = m.Type
+
+		switch m.Type {
+		case storage.GaugeType:
+			if val, ok := m.Value.(float64); ok {
+				payload.Value = &val
+			} else {
+				log.Printf("invalid gauge value: %v", m.Value)
+				continue
+			}
+		case storage.CounterType:
+			switch v := m.Value.(type) {
+			case int64:
+				payload.Delta = &v
+			case float64:
+				val := int64(v)
+				payload.Delta = &val
+			default:
+				log.Printf("invalid counter value type: %T", v)
+				continue
+			}
+		default:
+			log.Printf("unknown metric type: %s", m.Type)
+			continue
+		}
+
+		batch = append(batch, payload)
+	}
+
+	if len(batch) == 0 {
+		return errors.New("empty batch")
+	}
+
+	body, err := json.Marshal(batch)
+	if err != nil {
+		log.Printf("failed to marshal JSON batch: %v", err)
+		return err
+	}
+
+	compressedBody, err := helpers.CompressRequest(body)
+	if err != nil {
+		log.Println("compression error:", err)
+		return err
+	}
+
+	serverAddress := fmt.Sprintf("http://%s", cmd.ServerAddress)
+	url := fmt.Sprintf("%s/updates/", serverAddress)
+
+	req, err := http.NewRequest(http.MethodPost, url, compressedBody)
+	if err != nil {
+		log.Println("build request error:", err)
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Encoding", "gzip")
+	req.Header.Set("Accept-Encoding", "gzip")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Println("request error:", err)
+		return err
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("error closing response body: %v", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("server responded with %s for %s", resp.Status, url)
+	}
+
+	return nil
 }

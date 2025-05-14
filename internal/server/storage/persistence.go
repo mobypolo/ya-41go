@@ -1,7 +1,10 @@
 package storage
 
 import (
+	"context"
 	"encoding/json"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/mobypolo/ya-41go/internal/server/db"
 	"github.com/mobypolo/ya-41go/internal/shared/logger"
 	"go.uber.org/zap"
 	"os"
@@ -16,6 +19,7 @@ type PersistentStorage struct {
 	storeInterval time.Duration
 	quitChan      chan struct{}
 	once          sync.Once
+	db            *pgxpool.Pool
 }
 
 func NewPersistentStorage(filePath string, storeInterval time.Duration, restore bool) *PersistentStorage {
@@ -33,6 +37,13 @@ func NewPersistentStorage(filePath string, storeInterval time.Duration, restore 
 		go ps.startAutoSave()
 	}
 	return ps
+}
+
+func NewPersistentStorageWithPostgres(db *pgxpool.Pool) *PersistentStorage {
+	return &PersistentStorage{
+		MemStorage: NewMemStorage(),
+		db:         db,
+	}
 }
 
 func (s *PersistentStorage) startAutoSave() {
@@ -119,25 +130,45 @@ func (s *PersistentStorage) LoadFromDisk() error {
 	return nil
 }
 
+//goland:noinspection SqlNoDataSourceInspection
 func (s *PersistentStorage) UpdateGauge(name string, value float64) error {
+	if s.db != nil {
+		_, err := s.db.Exec(context.Background(),
+			db.InsertOrUpdateGauge,
+			name, value)
+		if err != nil {
+			return err
+		}
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.Gauges[name] = value
 
-	if s.storeInterval == 0 {
+	if s.storeInterval == 0 && s.db == nil {
 		return s.saveToDiskLocked()
 	}
 	return nil
 }
 
+//goland:noinspection SqlNoDataSourceInspection
 func (s *PersistentStorage) UpdateCounter(name string, delta int64) error {
+	if s.db != nil {
+		_, err := s.db.Exec(context.Background(),
+			db.InsertOrUpdateCounter,
+			name, delta)
+		if err != nil {
+			return err
+		}
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.Counters[name] += delta
 
-	if s.storeInterval == 0 {
+	if s.storeInterval == 0 && s.db == nil {
 		return s.saveToDiskLocked()
 	}
 	return nil
