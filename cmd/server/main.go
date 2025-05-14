@@ -30,6 +30,7 @@ func main() {
 	r.Use(middleware.LoggingMiddleware)
 	r.Use(middleware.GzipDecompressMiddleware)
 	r.Use(middleware.GzipCompressMiddleware)
+	r.Use(middleware.AddHashToResponse(cfg.Key))
 
 	route.RegisterAllRoutes(dbInstancePool, cfg)
 	route.MountInto(r)

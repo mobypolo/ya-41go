@@ -28,12 +28,12 @@ func RegisterAllRoutes(db *pgxpool.Pool, cfg cmd.Config) {
 		panic("metricService not set before route registration")
 	}
 	Register("/", http.MethodPost, router.MakeRouteHandler(handler.IndexHandler(s), middleware.HashSHA256(cfg.Key)))
-	Register("/ping", http.MethodGet, router.MakeRouteHandler(handler.PingHandler(s, db), middleware.HashSHA256(cfg.Key)))
+	Register("/ping", http.MethodGet, router.MakeRouteHandler(handler.PingHandler(s, db)))
 	Register("/update/*", http.MethodPost, router.MakeRouteHandler(handler.UpdateHandler(s), middleware.HashSHA256(cfg.Key), middleware.AllowOnlyPost, middleware.RequirePathParts(4)))
 	Register("/update/", http.MethodPost, router.MakeRouteHandler(handler.UpdateJSONHandler(s), middleware.HashSHA256(cfg.Key), middleware.AllowOnlyPost, middleware.SetJSONContentType))
 	Register("/updates/", http.MethodPost, router.MakeRouteHandler(handler.UpdateJSONHandlerBatch(s), middleware.HashSHA256(cfg.Key), middleware.AllowOnlyPost, middleware.SetJSONContentType))
-	Register("/value/*", http.MethodGet, router.MakeRouteHandler(handler.ValueHandler(s), middleware.HashSHA256(cfg.Key)))
-	Register("/value/", http.MethodPost, router.MakeRouteHandler(handler.ValueJSONHandler(s), middleware.HashSHA256(cfg.Key), middleware.SetJSONContentType))
+	Register("/value/*", http.MethodGet, router.MakeRouteHandler(handler.ValueHandler(s)))
+	Register("/value/", http.MethodPost, router.MakeRouteHandler(handler.ValueJSONHandler(s), middleware.SetJSONContentType))
 }
 
 func MountInto(mux interface{}) {
