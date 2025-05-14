@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"bytes"
 	"compress/gzip"
 	"io"
 	"net/http"
@@ -10,18 +11,23 @@ import (
 func GzipDecompressMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
-			gz, err := gzip.NewReader(r.Body)
+			// читаем всё тело сразу
+			bodyBytes, err := io.ReadAll(r.Body)
 			if err != nil {
-				http.Error(w, "failed to create gzip reader", http.StatusBadRequest)
+				http.Error(w, "read error", http.StatusBadRequest)
 				return
 			}
-			defer func(gz *gzip.Reader) {
-				err := gz.Close()
-				if err != nil {
-					http.Error(w, "failed to close gzip reader", http.StatusBadRequest)
-				}
-			}(gz)
-			r.Body = io.NopCloser(gz)
+			_ = r.Body.Close()
+
+			// пробуем распаковать
+			gzReader, err := gzip.NewReader(bytes.NewReader(bodyBytes))
+			if err != nil {
+				r.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			r.Body = io.NopCloser(gzReader)
 		}
 		next.ServeHTTP(w, r)
 	})
