@@ -31,7 +31,7 @@ func main() {
 	r.Use(middleware.GzipDecompressMiddleware)
 	r.Use(middleware.GzipCompressMiddleware)
 
-	route.RegisterAllRoutes(dbInstancePool)
+	route.RegisterAllRoutes(dbInstancePool, cfg)
 	route.MountInto(r)
 
 	logger.L().Info("Server started", zap.String("addr", cmd.ServerAddress))
