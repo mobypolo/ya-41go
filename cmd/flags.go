@@ -20,6 +20,7 @@ type Config struct {
 	FileStoragePath string            `env:"FILE_STORAGE_PATH" envDefault:"metrics.json"`
 	RestoreOnStart  bool              `env:"RESTORE" envDefault:"true"`
 	DatabaseDSN     string            `env:"DATABASE_DSN" envDefault:""`
+	Key             string            `env:"KEY" envDefault:""`
 }
 
 var (
@@ -46,11 +47,13 @@ func ParseFlags(app string) Config {
 		pflag.StringVarP(&cfg.FileStoragePath, "file", "f", cfg.FileStoragePath, "File Storage Path")
 		pflag.BoolVarP(&cfg.RestoreOnStart, "restore", "r", cfg.RestoreOnStart, "Restore on load")
 		pflag.StringVarP(&cfg.DatabaseDSN, "dsn", "d", cfg.DatabaseDSN, "PostgresSQL DSN")
+		pflag.StringVarP(&cfg.Key, "key", "k", cfg.Key, "Secret key for HMAC SHA256")
 
 	case "agent":
 		pflag.StringVarP(&ServerAddress, "address", "a", cfg.Address, "HTTP server address")
 		report := pflag.IntP("report-interval", "r", cfg.ReportInterval, "Report interval (seconds)")
 		poll := pflag.IntP("poll-interval", "p", cfg.PollInterval, "Poll interval (seconds)")
+		pflag.StringVarP(&cfg.Key, "key", "k", cfg.Key, "Secret key for HMAC SHA256")
 
 		pflag.Parse()
 

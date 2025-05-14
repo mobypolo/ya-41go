@@ -30,11 +30,13 @@ func main() {
 	r.Use(middleware.LoggingMiddleware)
 	r.Use(middleware.GzipDecompressMiddleware)
 	r.Use(middleware.GzipCompressMiddleware)
+	r.Use(middleware.AddHashToResponse(cfg.Key))
 
-	route.RegisterAllRoutes(dbInstancePool)
+	route.RegisterAllRoutes(dbInstancePool, cfg)
 	route.MountInto(r)
 
 	logger.L().Info("Server started", zap.String("addr", cmd.ServerAddress))
+	logger.L().Info("Started server with cfg", zap.Any("cfg", cfg))
 	if err := http.ListenAndServe(cmd.ServerAddress, r); err != nil {
 		logger.L().Fatal("server error", zap.Error(err))
 	}

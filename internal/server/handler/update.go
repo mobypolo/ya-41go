@@ -11,7 +11,9 @@ import (
 	"github.com/mobypolo/ya-41go/internal/server/service"
 	"github.com/mobypolo/ya-41go/internal/server/storage"
 	"github.com/mobypolo/ya-41go/internal/shared/dto"
+	"github.com/mobypolo/ya-41go/internal/shared/logger"
 	"github.com/mobypolo/ya-41go/internal/shared/utils"
+	"go.uber.org/zap"
 	"io"
 	"log"
 	"net/http"
@@ -70,12 +72,14 @@ func UpdateJSONHandlerBatch(service service.MetricService) http.HandlerFunc {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, "cannot read body", http.StatusBadRequest)
+			logger.L().Info("cannot read body", zap.Any("body", body))
 			return
 		}
 
 		var batch []dto.Metrics
 		if err := json.Unmarshal(body, &batch); err != nil {
 			http.Error(w, "invalid JSON format", http.StatusBadRequest)
+			logger.L().Info("invalid JSON format", zap.Any("body", body))
 			return
 		}
 

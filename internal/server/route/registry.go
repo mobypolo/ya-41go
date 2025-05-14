@@ -2,6 +2,7 @@ package route
 
 import (
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/mobypolo/ya-41go/cmd"
 	"github.com/mobypolo/ya-41go/internal/server/handler"
 	"github.com/mobypolo/ya-41go/internal/server/middleware"
 	"github.com/mobypolo/ya-41go/internal/server/router"
@@ -21,16 +22,16 @@ func Register(path, method string, handler http.Handler) {
 	routes = append(routes, Route{Path: path, Method: method, Handler: handler})
 }
 
-func RegisterAllRoutes(db *pgxpool.Pool) {
+func RegisterAllRoutes(db *pgxpool.Pool, cfg cmd.Config) {
 	s := service.GetMetricService()
 	if s == nil {
 		panic("metricService not set before route registration")
 	}
-	Register("/", http.MethodPost, router.MakeRouteHandler(handler.IndexHandler(s)))
+	Register("/", http.MethodPost, router.MakeRouteHandler(handler.IndexHandler(s), middleware.HashSHA256(cfg.Key)))
 	Register("/ping", http.MethodGet, router.MakeRouteHandler(handler.PingHandler(s, db)))
-	Register("/update/*", http.MethodPost, router.MakeRouteHandler(handler.UpdateHandler(s), middleware.AllowOnlyPost, middleware.RequirePathParts(4)))
-	Register("/update/", http.MethodPost, router.MakeRouteHandler(handler.UpdateJSONHandler(s), middleware.AllowOnlyPost, middleware.SetJSONContentType))
-	Register("/updates/", http.MethodPost, router.MakeRouteHandler(handler.UpdateJSONHandlerBatch(s), middleware.AllowOnlyPost, middleware.SetJSONContentType))
+	Register("/update/*", http.MethodPost, router.MakeRouteHandler(handler.UpdateHandler(s), middleware.HashSHA256(cfg.Key), middleware.AllowOnlyPost, middleware.RequirePathParts(4)))
+	Register("/update/", http.MethodPost, router.MakeRouteHandler(handler.UpdateJSONHandler(s), middleware.HashSHA256(cfg.Key), middleware.AllowOnlyPost, middleware.SetJSONContentType))
+	Register("/updates/", http.MethodPost, router.MakeRouteHandler(handler.UpdateJSONHandlerBatch(s), middleware.HashSHA256(cfg.Key), middleware.AllowOnlyPost, middleware.SetJSONContentType))
 	Register("/value/*", http.MethodGet, router.MakeRouteHandler(handler.ValueHandler(s)))
 	Register("/value/", http.MethodPost, router.MakeRouteHandler(handler.ValueJSONHandler(s), middleware.SetJSONContentType))
 }

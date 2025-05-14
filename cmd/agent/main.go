@@ -18,7 +18,7 @@ import (
 )
 
 func main() {
-	cmd.ParseFlags("agent")
+	cfg := cmd.ParseFlags("agent")
 	metricsChan := make(chan []agent.Metric, 1)
 
 	go func() {
@@ -49,12 +49,13 @@ func main() {
 			//sendMetricJSON(m)
 			//}
 			_ = utils.RetryWithBackoff(context.Background(), 3, func() error {
-				return sendMetricJSONBatch(metrics)
+				return sendMetricJSONBatch(metrics, cfg)
 			})
 		}
 	}()
 
 	log.Println("Agent started")
+	log.Println("Started agent with cfg : ", fmt.Sprintf("%+v", cfg))
 	select {}
 }
 
@@ -157,7 +158,7 @@ func _(m agent.Metric) {
 	}
 }
 
-func sendMetricJSONBatch(metrics []agent.Metric) error {
+func sendMetricJSONBatch(metrics []agent.Metric, cfg cmd.Config) error {
 	if len(metrics) == 0 {
 		return errors.New("empty batch")
 	}
@@ -223,6 +224,11 @@ func sendMetricJSONBatch(metrics []agent.Metric) error {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Content-Encoding", "gzip")
 	req.Header.Set("Accept-Encoding", "gzip")
+
+	if cfg.Key != "" {
+		hash := utils.HashBody(body, cfg.Key)
+		req.Header.Set("HashSHA256", hash)
+	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
