@@ -29,46 +29,50 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 	return n, err
 }
 
-func LoggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		rw := &responseWriter{ResponseWriter: w, statusCode: 200}
+func LoggingMiddleware(_ string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		{
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				start := time.Now()
+				rw := &responseWriter{ResponseWriter: w, statusCode: 200}
 
-		var bodyPreview any
+				var bodyPreview any
 
-		if r.Body != nil && r.ContentLength != 0 {
-			bodyBytes, err := io.ReadAll(r.Body)
-			if err == nil {
-				if strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
-					gr, err := gzip.NewReader(bytes.NewReader(bodyBytes))
+				if r.Body != nil && r.ContentLength != 0 {
+					bodyBytes, err := io.ReadAll(r.Body)
 					if err == nil {
-						bodyBytes, _ = io.ReadAll(gr)
-						_ = gr.Close()
+						if strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
+							gr, err := gzip.NewReader(bytes.NewReader(bodyBytes))
+							if err == nil {
+								bodyBytes, _ = io.ReadAll(gr)
+								_ = gr.Close()
+							}
+						}
+
+						var parsed any
+						if err := json.Unmarshal(bodyBytes, &parsed); err == nil {
+							bodyPreview = parsed // structured object
+						} else {
+							bodyPreview = string(bodyBytes) // fallback: raw string
+						}
+
+						r.Body = io.NopCloser(bytes.NewReader(bodyBytes))
 					}
 				}
 
-				var parsed any
-				if err := json.Unmarshal(bodyBytes, &parsed); err == nil {
-					bodyPreview = parsed // structured object
-				} else {
-					bodyPreview = string(bodyBytes) // fallback: raw string
-				}
+				next.ServeHTTP(rw, r)
 
-				r.Body = io.NopCloser(bytes.NewReader(bodyBytes))
-			}
+				duration := time.Since(start)
+
+				logger.L().Info("HTTP request",
+					zap.String("method", r.Method),
+					zap.String("uri", r.RequestURI),
+					zap.Int("status", rw.statusCode),
+					zap.Int("size", rw.size),
+					zap.Duration("duration", duration),
+					zap.Any("body", bodyPreview),
+				)
+			})
 		}
-
-		next.ServeHTTP(rw, r)
-
-		duration := time.Since(start)
-
-		logger.L().Info("HTTP request",
-			zap.String("method", r.Method),
-			zap.String("uri", r.RequestURI),
-			zap.Int("status", rw.statusCode),
-			zap.Int("size", rw.size),
-			zap.Duration("duration", duration),
-			zap.Any("body", bodyPreview),
-		)
-	})
+	}
 }

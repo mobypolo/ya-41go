@@ -13,6 +13,12 @@ func HashSHA256(key string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if key != "" {
+				expectedHash := r.Header.Get("HashSHA256")
+				if expectedHash == "" {
+					next.ServeHTTP(w, r)
+					return
+				}
+
 				body, err := io.ReadAll(r.Body)
 				if err != nil {
 					http.Error(w, "read error", http.StatusInternalServerError)
@@ -24,12 +30,6 @@ func HashSHA256(key string) func(http.Handler) http.Handler {
 					}
 				}()
 				r.Body = io.NopCloser(bytes.NewReader(body))
-
-				expectedHash := r.Header.Get("HashSHA256")
-				if expectedHash == "" {
-					next.ServeHTTP(w, r)
-					return
-				}
 
 				actualHash := utils.HashBody(body, key)
 

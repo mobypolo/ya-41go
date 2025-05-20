@@ -70,6 +70,10 @@ func ParseFlags(app string) Config {
 
 	pflag.Parse()
 
+	if keyFromEnv := os.Getenv("KEY"); keyFromEnv != "" {
+		cfg.Key = keyFromEnv
+	}
+
 	if len(pflag.Args()) > 0 {
 		_, err := fmt.Fprintf(os.Stderr, "Unknown flags: %v\n", pflag.Args())
 		if err != nil {

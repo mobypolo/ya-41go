@@ -27,7 +27,7 @@ func main() {
 
 	r := chi.NewRouter()
 
-	r.Use(middleware.LoggingMiddleware)
+	r.Use(middleware.LoggingMiddleware(cfg.Key))
 	r.Use(middleware.GzipDecompressMiddleware)
 	r.Use(middleware.GzipCompressMiddleware)
 	r.Use(middleware.AddHashToResponse(cfg.Key))
