@@ -38,6 +38,9 @@ var AllowedGaugeMetrics = []string{
 	"testSetGet*",
 	"GaugeBatchZip*",
 	"GetSetZip*",
+	"TotalMemory",
+	"FreeMemory",
+	"CPUutilization*",
 }
 
 func AllGaugeMetricNames() []string {

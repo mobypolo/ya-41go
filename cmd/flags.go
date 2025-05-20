@@ -21,6 +21,7 @@ type Config struct {
 	RestoreOnStart  bool              `env:"RESTORE" envDefault:"true"`
 	DatabaseDSN     string            `env:"DATABASE_DSN" envDefault:""`
 	Key             string            `env:"KEY" envDefault:""`
+	RateLimit       int               `env:"RATE_LIMIT" envDefault:"3"`
 }
 
 var (
@@ -54,6 +55,7 @@ func ParseFlags(app string) Config {
 		report := pflag.IntP("report-interval", "r", cfg.ReportInterval, "Report interval (seconds)")
 		poll := pflag.IntP("poll-interval", "p", cfg.PollInterval, "Poll interval (seconds)")
 		pflag.StringVarP(&cfg.Key, "key", "k", cfg.Key, "Secret key for HMAC SHA256")
+		pflag.IntVarP(&cfg.RateLimit, "limit", "l", cfg.RateLimit, "Max concurrent outgoing requests")
 
 		pflag.Parse()
 
@@ -80,6 +82,11 @@ func ParseFlags(app string) Config {
 			log.Println(err)
 		}
 		os.Exit(1)
+	}
+
+	if cfg.RateLimit <= 0 {
+		cfg.RateLimit = 3
+		log.Println("Rate limit must be more than 0, fallback to 3")
 	}
 
 	return cfg
