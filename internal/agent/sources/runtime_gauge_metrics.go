@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"fmt"
 	"github.com/mobypolo/ya-41go/internal/server/storage"
 	"github.com/mobypolo/ya-41go/internal/shared/utils"
 	"runtime"
@@ -8,6 +9,8 @@ import (
 	"time"
 
 	"github.com/mobypolo/ya-41go/internal/agent"
+	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/mem"
 )
 
 var mu sync.Mutex
@@ -50,6 +53,35 @@ func (r runtimeMetric) Collect() (interface{}, error) {
 }
 
 func init() {
+	go func() {
+		for {
+			v, err := mem.VirtualMemory()
+			if err == nil {
+				agent.Register(runtimeMetric{
+					name: "TotalMemory",
+					f:    func() float64 { return float64(v.Total) },
+				})
+				agent.Register(runtimeMetric{
+					name: "FreeMemory",
+					f:    func() float64 { return float64(v.Free) },
+				})
+			}
+
+			cpuPercents, err := cpu.Percent(0, true)
+			if err == nil {
+				for i, val := range cpuPercents {
+					name := fmt.Sprintf("CPUutilization%d", i)
+					agent.Register(runtimeMetric{
+						name: name,
+						f:    func(val float64) func() float64 { return func() float64 { return val } }(val),
+					})
+				}
+			}
+
+			time.Sleep(10 * time.Second)
+		}
+	}()
+
 	go func() {
 		for {
 			collectMemStats()

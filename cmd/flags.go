@@ -20,6 +20,8 @@ type Config struct {
 	FileStoragePath string            `env:"FILE_STORAGE_PATH" envDefault:"metrics.json"`
 	RestoreOnStart  bool              `env:"RESTORE" envDefault:"true"`
 	DatabaseDSN     string            `env:"DATABASE_DSN" envDefault:""`
+	Key             string            `env:"KEY" envDefault:""`
+	RateLimit       int               `env:"RATE_LIMIT" envDefault:"3"`
 }
 
 var (
@@ -46,11 +48,14 @@ func ParseFlags(app string) Config {
 		pflag.StringVarP(&cfg.FileStoragePath, "file", "f", cfg.FileStoragePath, "File Storage Path")
 		pflag.BoolVarP(&cfg.RestoreOnStart, "restore", "r", cfg.RestoreOnStart, "Restore on load")
 		pflag.StringVarP(&cfg.DatabaseDSN, "dsn", "d", cfg.DatabaseDSN, "PostgresSQL DSN")
+		pflag.StringVarP(&cfg.Key, "key", "k", cfg.Key, "Secret key for HMAC SHA256")
 
 	case "agent":
 		pflag.StringVarP(&ServerAddress, "address", "a", cfg.Address, "HTTP server address")
 		report := pflag.IntP("report-interval", "r", cfg.ReportInterval, "Report interval (seconds)")
 		poll := pflag.IntP("poll-interval", "p", cfg.PollInterval, "Poll interval (seconds)")
+		pflag.StringVarP(&cfg.Key, "key", "k", cfg.Key, "Secret key for HMAC SHA256")
+		pflag.IntVarP(&cfg.RateLimit, "limit", "l", cfg.RateLimit, "Max concurrent outgoing requests")
 
 		pflag.Parse()
 
@@ -67,12 +72,21 @@ func ParseFlags(app string) Config {
 
 	pflag.Parse()
 
+	if keyFromEnv := os.Getenv("KEY"); keyFromEnv != "" {
+		cfg.Key = keyFromEnv
+	}
+
 	if len(pflag.Args()) > 0 {
 		_, err := fmt.Fprintf(os.Stderr, "Unknown flags: %v\n", pflag.Args())
 		if err != nil {
 			log.Println(err)
 		}
 		os.Exit(1)
+	}
+
+	if cfg.RateLimit <= 0 {
+		cfg.RateLimit = 3
+		log.Println("Rate limit must be more than 0, fallback to 3")
 	}
 
 	return cfg

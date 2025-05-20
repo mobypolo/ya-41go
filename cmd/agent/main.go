@@ -18,8 +18,11 @@ import (
 )
 
 func main() {
-	cmd.ParseFlags("agent")
+	cfg := cmd.ParseFlags("agent")
 	metricsChan := make(chan []agent.Metric, 1)
+
+	bufferSize := cfg.RateLimit * 10
+	metricTasks := make(chan agent.Metric, bufferSize)
 
 	go func() {
 		for {
@@ -30,6 +33,16 @@ func main() {
 			time.Sleep(cmd.PollInterval)
 		}
 	}()
+
+	for i := 0; i < cfg.RateLimit; i++ {
+		go func() {
+			for metric := range metricTasks {
+				_ = utils.RetryWithBackoff(context.Background(), 3, func() error {
+					return sendMetricJSON(metric)
+				})
+			}
+		}()
+	}
 
 	go func() {
 		ticker := time.NewTicker(cmd.ReportInterval)
@@ -44,17 +57,17 @@ func main() {
 				metrics = nil
 			}
 
-			//for _, m := range metrics {
-			//sendMetric(m)
-			//sendMetricJSON(m)
-			//}
+			for _, m := range metrics {
+				metricTasks <- m
+			}
 			_ = utils.RetryWithBackoff(context.Background(), 3, func() error {
-				return sendMetricJSONBatch(metrics)
+				return sendMetricJSONBatch(metrics, cfg)
 			})
 		}
 	}()
 
 	log.Println("Agent started")
+	log.Println("Started agent with cfg : ", fmt.Sprintf("%+v", cfg))
 	select {}
 }
 
@@ -87,8 +100,7 @@ func sendMetric(m agent.Metric) {
 	}
 }
 
-// sendMetricJSON
-func _(m agent.Metric) {
+func sendMetricJSON(m agent.Metric) error {
 	serverAddress := fmt.Sprintf("http://%s", cmd.ServerAddress)
 	url := fmt.Sprintf("%s/update/", serverAddress)
 
@@ -102,7 +114,7 @@ func _(m agent.Metric) {
 			payload.Value = &val
 		} else {
 			log.Printf("invalid gauge value: %v", m.Value)
-			return
+			return fmt.Errorf("invalid gauge value: %v", m.Value)
 		}
 	case storage.CounterType:
 		switch v := m.Value.(type) {
@@ -113,29 +125,29 @@ func _(m agent.Metric) {
 			payload.Delta = &val
 		default:
 			log.Printf("invalid counter value type: %T", v)
-			return
+			return fmt.Errorf("invalid counter value type: %T", v)
 		}
 	default:
 		log.Printf("unknown metric type: %s", m.Type)
-		return
+		return fmt.Errorf("unknown metric type: %s", m.Type)
 	}
 
 	body, err := json.Marshal(payload)
 	if err != nil {
 		log.Printf("failed to marshal JSON: %v", err)
-		return
+		return fmt.Errorf("failed to marshal JSON: %v", err)
 	}
 
 	compressedBody, err := helpers.CompressRequest(body)
 	if err != nil {
 		log.Println("compression error:", err)
-		return
+		return fmt.Errorf("compression error: %s", err)
 	}
 
 	req, err := http.NewRequest(http.MethodPost, url, compressedBody)
 	if err != nil {
 		log.Println("build request error:", err)
-		return
+		return fmt.Errorf("build request error: %s", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Content-Encoding", "gzip")
@@ -144,7 +156,7 @@ func _(m agent.Metric) {
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Println("request error:", err)
-		return
+		return fmt.Errorf("request error: %s", err)
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
@@ -155,9 +167,10 @@ func _(m agent.Metric) {
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("server responded with %s for %s", resp.Status, url)
 	}
+	return nil
 }
 
-func sendMetricJSONBatch(metrics []agent.Metric) error {
+func sendMetricJSONBatch(metrics []agent.Metric, cfg cmd.Config) error {
 	if len(metrics) == 0 {
 		return errors.New("empty batch")
 	}
@@ -223,6 +236,11 @@ func sendMetricJSONBatch(metrics []agent.Metric) error {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Content-Encoding", "gzip")
 	req.Header.Set("Accept-Encoding", "gzip")
+
+	if cfg.Key != "" {
+		hash := utils.HashBody(body, cfg.Key)
+		req.Header.Set("HashSHA256", hash)
+	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
