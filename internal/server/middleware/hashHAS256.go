@@ -26,6 +26,11 @@ func HashSHA256(key string) func(http.Handler) http.Handler {
 				r.Body = io.NopCloser(bytes.NewReader(body))
 
 				expectedHash := r.Header.Get("HashSHA256")
+				if expectedHash == "" {
+					next.ServeHTTP(w, r)
+					return
+				}
+
 				actualHash := utils.HashBody(body, key)
 
 				if !hmac.Equal([]byte(expectedHash), []byte(actualHash)) {
