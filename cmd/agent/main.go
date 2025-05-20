@@ -114,7 +114,7 @@ func sendMetricJSON(m agent.Metric) error {
 			payload.Value = &val
 		} else {
 			log.Printf("invalid gauge value: %v", m.Value)
-			return errors.New(fmt.Sprintf("invalid gauge value: %v", m.Value))
+			return fmt.Errorf("invalid gauge value: %v", m.Value)
 		}
 	case storage.CounterType:
 		switch v := m.Value.(type) {
@@ -125,29 +125,29 @@ func sendMetricJSON(m agent.Metric) error {
 			payload.Delta = &val
 		default:
 			log.Printf("invalid counter value type: %T", v)
-			return errors.New(fmt.Sprintf("invalid counter value type: %T", v))
+			return fmt.Errorf("invalid counter value type: %T", v)
 		}
 	default:
 		log.Printf("unknown metric type: %s", m.Type)
-		return errors.New(fmt.Sprintf("unknown metric type: %s", m.Type))
+		return fmt.Errorf("unknown metric type: %s", m.Type)
 	}
 
 	body, err := json.Marshal(payload)
 	if err != nil {
 		log.Printf("failed to marshal JSON: %v", err)
-		return errors.New(fmt.Sprintf("failed to marshal JSON: %v", err))
+		return fmt.Errorf("failed to marshal JSON: %v", err)
 	}
 
 	compressedBody, err := helpers.CompressRequest(body)
 	if err != nil {
 		log.Println("compression error:", err)
-		return errors.New(fmt.Sprintf("compression error: %s", err))
+		return fmt.Errorf("compression error: %s", err)
 	}
 
 	req, err := http.NewRequest(http.MethodPost, url, compressedBody)
 	if err != nil {
 		log.Println("build request error:", err)
-		return errors.New(fmt.Sprintf("build request error: %s", err))
+		return fmt.Errorf("build request error: %s", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Content-Encoding", "gzip")
@@ -156,7 +156,7 @@ func sendMetricJSON(m agent.Metric) error {
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Println("request error:", err)
-		return errors.New(fmt.Sprintf("request error: %s", err))
+		return fmt.Errorf("request error: %s", err)
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
