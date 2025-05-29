@@ -14,6 +14,7 @@ import (
 	"net/http"
 )
 
+// sendMetric
 func _(m agent.Metric, cfg config.Config) {
 	serverAddress := fmt.Sprintf("http://%s", cfg.Address)
 
