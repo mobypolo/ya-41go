@@ -2,7 +2,7 @@ package route
 
 import (
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/mobypolo/ya-41go/cmd"
+	"github.com/mobypolo/ya-41go/internal/server/config"
 	"github.com/mobypolo/ya-41go/internal/server/handler"
 	"github.com/mobypolo/ya-41go/internal/server/middleware"
 	"github.com/mobypolo/ya-41go/internal/server/router"
@@ -22,7 +22,7 @@ func Register(path, method string, handler http.Handler) {
 	routes = append(routes, Route{Path: path, Method: method, Handler: handler})
 }
 
-func RegisterAllRoutes(db *pgxpool.Pool, cfg cmd.Config) {
+func RegisterAllRoutes(db *pgxpool.Pool, cfg config.Config) {
 	s := service.GetMetricService()
 	if s == nil {
 		panic("metricService not set before route registration")

@@ -52,43 +52,52 @@ func (r runtimeMetric) Collect() (interface{}, error) {
 	return r.f(), nil
 }
 
-func init() {
-	go func() {
-		for {
-			v, err := mem.VirtualMemory()
-			if err == nil {
+func StartRuntimeGaugeMetrics() {
+	go startMemoryCollector()
+	go startMemStatsCollector()
+	registerStaticRuntimeMetrics()
+}
+
+func startMemoryCollector() {
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		v, err := mem.VirtualMemory()
+		if err == nil {
+			agent.Register(runtimeMetric{
+				name: "TotalMemory",
+				f:    func() float64 { return float64(v.Total) },
+			})
+			agent.Register(runtimeMetric{
+				name: "FreeMemory",
+				f:    func() float64 { return float64(v.Free) },
+			})
+		}
+
+		cpuPercents, err := cpu.Percent(0, true)
+		if err == nil {
+			for i, val := range cpuPercents {
+				name := fmt.Sprintf("CPUutilization%d", i)
 				agent.Register(runtimeMetric{
-					name: "TotalMemory",
-					f:    func() float64 { return float64(v.Total) },
-				})
-				agent.Register(runtimeMetric{
-					name: "FreeMemory",
-					f:    func() float64 { return float64(v.Free) },
+					name: name,
+					f:    func(val float64) func() float64 { return func() float64 { return val } }(val),
 				})
 			}
-
-			cpuPercents, err := cpu.Percent(0, true)
-			if err == nil {
-				for i, val := range cpuPercents {
-					name := fmt.Sprintf("CPUutilization%d", i)
-					agent.Register(runtimeMetric{
-						name: name,
-						f:    func(val float64) func() float64 { return func() float64 { return val } }(val),
-					})
-				}
-			}
-
-			time.Sleep(10 * time.Second)
 		}
-	}()
+	}
+}
 
-	go func() {
-		for {
-			collectMemStats()
-			time.Sleep(time.Second)
-		}
-	}()
+func startMemStatsCollector() {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
 
+	for range ticker.C {
+		collectMemStats()
+	}
+}
+
+func registerStaticRuntimeMetrics() {
 	metrics := []runtimeMetric{
 		{"Alloc", func() float64 { return getMemStatUint64(func(m *runtime.MemStats) uint64 { return m.Alloc }) }},
 		{"BuckHashSys", func() float64 { return getMemStatUint64(func(m *runtime.MemStats) uint64 { return m.BuckHashSys }) }},
