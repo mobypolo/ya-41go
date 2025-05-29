@@ -26,8 +26,8 @@ func RegisterAllRoutes(db *pgxpool.Pool, cfg config.Config) {
 	s := service.GetMetricService()
 
 	updateHandler := handler.NewMetricUpdateHandler(s)
-	updateJsonHandler := handler.NewMetricUpdateJSONHandler(s)
-	updateJsonHandlerBatch := handler.NewMetricUpdateJSONHandlerBath(s)
+	updateJSONHandler := handler.NewMetricUpdateJSONHandler(s)
+	updateJSONHandlerBatch := handler.NewMetricUpdateJSONHandlerBath(s)
 
 	if s == nil {
 		panic("metricService not set before route registration")
@@ -35,8 +35,8 @@ func RegisterAllRoutes(db *pgxpool.Pool, cfg config.Config) {
 	Register("/", http.MethodPost, router.MakeRouteHandler(handler.IndexHandler(s), middleware.HashSHA256(cfg.Key)))
 	Register("/ping", http.MethodGet, router.MakeRouteHandler(handler.PingHandler(s, db)))
 	Register("/update/*", http.MethodPost, router.MakeRouteHandler(updateHandler.UpdateHandler(), middleware.HashSHA256(cfg.Key), middleware.AllowOnlyPost, middleware.RequirePathParts(4)))
-	Register("/update/", http.MethodPost, router.MakeRouteHandler(updateJsonHandler.UpdateJSONHandler(), middleware.HashSHA256(cfg.Key), middleware.AllowOnlyPost, middleware.SetJSONContentType))
-	Register("/updates/", http.MethodPost, router.MakeRouteHandler(updateJsonHandlerBatch.UpdateJSONHandlerBatch(), middleware.HashSHA256(cfg.Key), middleware.AllowOnlyPost, middleware.SetJSONContentType))
+	Register("/update/", http.MethodPost, router.MakeRouteHandler(updateJSONHandler.UpdateJSONHandler(), middleware.HashSHA256(cfg.Key), middleware.AllowOnlyPost, middleware.SetJSONContentType))
+	Register("/updates/", http.MethodPost, router.MakeRouteHandler(updateJSONHandlerBatch.UpdateJSONHandlerBatch(), middleware.HashSHA256(cfg.Key), middleware.AllowOnlyPost, middleware.SetJSONContentType))
 	Register("/value/*", http.MethodGet, router.MakeRouteHandler(handler.ValueHandler(s)))
 	Register("/value/", http.MethodPost, router.MakeRouteHandler(handler.ValueJSONHandler(s), middleware.SetJSONContentType))
 }
