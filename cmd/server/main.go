@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/go-chi/chi/v5"
-	"github.com/mobypolo/ya-41go/cmd"
+	"github.com/mobypolo/ya-41go/internal/server/config"
 	"github.com/mobypolo/ya-41go/internal/server/db"
 	"github.com/mobypolo/ya-41go/internal/server/middleware"
 	"github.com/mobypolo/ya-41go/internal/server/route"
@@ -16,8 +16,8 @@ import (
 import _ "github.com/mobypolo/ya-41go/internal/server/handler"
 
 func main() {
-	cfg := cmd.ParseFlags("server")
-	logger.Init(cfg.ModeLogger)
+	cfg := config.ParseFlags()
+	logger.Init(cfg.LogMode)
 
 	dbInstancePool := db.InitPostgres(cfg.DatabaseDSN)
 	store := storage.MakeStorage(cfg, dbInstancePool)
@@ -27,15 +27,17 @@ func main() {
 
 	r := chi.NewRouter()
 
-	r.Use(middleware.LoggingMiddleware)
+	r.Use(middleware.LoggingMiddleware(cfg.Key))
 	r.Use(middleware.GzipDecompressMiddleware)
 	r.Use(middleware.GzipCompressMiddleware)
+	r.Use(middleware.AddHashToResponse(cfg.Key))
 
-	route.RegisterAllRoutes(dbInstancePool)
+	route.RegisterAllRoutes(dbInstancePool, cfg)
 	route.MountInto(r)
 
-	logger.L().Info("Server started", zap.String("addr", cmd.ServerAddress))
-	if err := http.ListenAndServe(cmd.ServerAddress, r); err != nil {
+	logger.L().Info("Server started", zap.String("addr", cfg.Address))
+	logger.L().Info("Started server with cfg", zap.Any("cfg", cfg))
+	if err := http.ListenAndServe(cfg.Address, r); err != nil {
 		logger.L().Fatal("server error", zap.Error(err))
 	}
 }
